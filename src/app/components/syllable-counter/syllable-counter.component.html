@@ -1,0 +1,7 @@
+<mat-form-field>
+	<input matInput placeholder="Írj egy verssort" (input)="onTextChange($event)" />
+</mat-form-field>
+<div>
+	<p><strong>Szótagszám:</strong> {{ syllableCount }}</p>
+	<p><strong>Időmérték:</strong> {{ meterPattern }}</p>
+</div>

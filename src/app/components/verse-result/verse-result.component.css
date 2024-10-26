@@ -1,0 +1,27 @@
+ .verse-line {
+   font-family: monospace;
+   display: flex;
+   align-items: center;
+ }
+
+ .pattern {
+   width: 15%;
+ }
+
+ .syllables {
+   width: 5%;
+ }
+
+ .verse-type {
+   width: 20%;
+ }
+
+ .rhyme {
+   width: 5%;
+   font-weight: bold;
+   color: #888;
+ }
+
+ .text {
+   flex-grow: 1;
+ }

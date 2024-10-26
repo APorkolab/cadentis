@@ -1,0 +1,4 @@
+<mat-form-field>
+	<input matInput placeholder="Írj egy verssort" (input)="analyzeVerse($event)" />
+</mat-form-field>
+<app-verse-result [verseLines]="matchedLines" [rhymePattern]="rhymePattern"></app-verse-result>
