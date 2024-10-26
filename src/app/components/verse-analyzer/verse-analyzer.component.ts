@@ -33,7 +33,7 @@ export class VerseAnalyzerComponent implements OnInit {
   }
 
   analyzeVerse(event: Event): void {
-    const inputText = (event.target as HTMLInputElement).value;
+    const inputText = (event.target as HTMLTextAreaElement).value; // textarea elemhez igazítva
     const lines = inputText.split('\n').map(line => line.trim()).filter(line => line);
 
     this.matchedLines = lines.map(line => {
@@ -41,7 +41,7 @@ export class VerseAnalyzerComponent implements OnInit {
       const syllableCount = pattern.length;
       const verseType = this.findVerseType(pattern, moraCount);
       const substitutions = this.findSubstitutions(pattern, verseType);
-      const lejtesirany = this.findMeterDirection(pattern); // Updated to `lejtesirany` to match VerseLine type
+      const lejtesirany = this.findMeterDirection(pattern);
 
       return {
         meterPattern: pattern,
@@ -51,7 +51,7 @@ export class VerseAnalyzerComponent implements OnInit {
         text: line,
         rhymeScheme: '',
         substitutions,
-        lejtesirany // Updated to `lejtesirany`
+        lejtesirany
       };
     });
 
@@ -59,10 +59,20 @@ export class VerseAnalyzerComponent implements OnInit {
   }
 
   private findVerseType(pattern: string, moraCount: number): VerseForm | undefined {
-    return this.verseForms.find(form =>
-      form.pattern === pattern ||
-      (form.pattern.length === pattern.length && form.moraCount === moraCount)
-    );
+    return this.verseForms.find(form => {
+      // Mora szám ellenőrzése
+      if (form.moraCount !== moraCount) return false;
+
+      // Minta regex formázása a `?` karakterek figyelembevételével
+      const regexPattern = new RegExp(
+        '^' +
+        form.pattern.replace(/\?/g, '.') +  // `?` karaktert helyettesít bármilyen karaktert elfogadó ponttal
+        '$'
+      );
+
+      // Ellenőrzi, hogy a mintázat illeszkedik-e a `pattern`-re
+      return regexPattern.test(pattern);
+    });
   }
 
   private findSubstitutions(pattern: string, verseType: VerseForm | undefined): string[] {

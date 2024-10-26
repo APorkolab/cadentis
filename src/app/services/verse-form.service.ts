@@ -217,8 +217,15 @@ export class VerseFormService {
   getVerseForms(): Observable<VerseForm[]> {
     return of(this.verseForms.map(form => ({
       ...form,
-      moraCount: form.pattern.split('').filter(char => char !== ' ').length,
+      // Kiszámolja a mora-számot úgy, hogy figyelmen kívül hagyja az opcionális, közömbös szótagot (?)
+      moraCount: this.calculateMoraCount(form.pattern),
       type: 'versláb' as const
     })));
+  }
+
+  // Kiszámítja a mora-számot, figyelembe véve a közömbös utolsó szótagot (?)
+  private calculateMoraCount(pattern: string): number {
+    const normalizedPattern = pattern.endsWith('?') ? pattern.slice(0, -1) : pattern;  // Közömbös utolsó szótag eltávolítása, ha van
+    return normalizedPattern.split('').filter(char => char !== ' ').length;
   }
 }

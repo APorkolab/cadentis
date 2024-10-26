@@ -8,28 +8,25 @@ export class TextParserService {
   private readonly SHORT_VOWELS = 'aeiouöü';
   private readonly VOWELS = this.LONG_VOWELS + this.SHORT_VOWELS;
   private readonly PUNCTUATION_MARKS = [',', '!', '.', ';'];
-  private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'ly', 'Sz', 'Cs', 'Ty', 'Gy', 'Ny', 'Zs', 'Dz', 'Ly'];
+  private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'ly'];
   private readonly CONSONANTS = 'bcdfghjklmnpqrstvwxyz';
 
   parseText(text: string, splitOnPunctuation = false, splitOnLineBreaks = false): { pattern: string; moraCount: number } {
-    const syllables = this.splitIntoSyllables(text, splitOnPunctuation, splitOnLineBreaks);
+    const normalizedText = text.toLowerCase();
+    const syllables = this.splitIntoSyllables(normalizedText, splitOnPunctuation, splitOnLineBreaks);
     let pattern = '';
     let moraCount = 0;
 
-    for (const syllable of syllables) {
+    syllables.forEach((syllable, index) => {
       const vowels = this.extractVowels(syllable);
+      if (vowels.length === 0) return;
 
-      if (vowels.length === 0) continue;
+      const isLastSyllable = index === syllables.length - 1;
+      const isLong = this.isLongSyllable(syllable, vowels, isLastSyllable);
 
-      if (vowels.length === 2 && vowels.every(vowel => this.isShortVowel(vowel))) {
-        pattern += 'UU';
-        moraCount += 2;
-      } else {
-        const isLong = this.isLongVowel(vowels[0]) || this.isLengthenedByCluster(syllable);
-        pattern += isLong ? '-' : 'U';
-        moraCount += isLong ? 2 : 1;
-      }
-    }
+      pattern += isLong ? '-' : 'U';
+      moraCount += isLong ? 2 : 1;
+    });
 
     return { pattern, moraCount };
   }
@@ -38,32 +35,25 @@ export class TextParserService {
     return syllable.split('').filter(char => this.isVowel(char));
   }
 
-  private isShortVowel(vowel: string): boolean {
-    return this.SHORT_VOWELS.includes(vowel);
-  }
-
   private splitIntoSyllables(text: string, splitOnPunctuation: boolean, splitOnLineBreaks: boolean): string[] {
-    const syllables = [];
+    const syllables: string[] = [];
     let currentSyllable = '';
-    let i = 0;
 
-    while (i < text.length) {
+    for (let i = 0; i < text.length; i++) {
       const char = text[i];
       const twoCharUnit = text.slice(i, i + 2);
 
-      if (this.isVowel(char.toLowerCase())) {
-        if (currentSyllable) syllables.push(currentSyllable);
-        currentSyllable = char;
-        i++;
-      } else if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
-        if (currentSyllable === '') {
-          currentSyllable += twoCharUnit;
-        } else {
-          currentSyllable += twoCharUnit;
-          syllables.push(currentSyllable);
-          currentSyllable = '';
+      if (this.isVowel(char)) {
+        currentSyllable += char;
+        // Következő karakterek hozzáadása a szótaghoz
+        let j = i + 1;
+        while (j < text.length && !this.isVowel(text[j])) {
+          currentSyllable += text[j];
+          j++;
         }
-        i += 2;
+        syllables.push(currentSyllable);
+        currentSyllable = '';
+        i = j - 1;
       } else if (
         (splitOnPunctuation && this.PUNCTUATION_MARKS.includes(char)) ||
         (splitOnLineBreaks && char === '\n')
@@ -72,10 +62,8 @@ export class TextParserService {
           syllables.push(currentSyllable);
           currentSyllable = '';
         }
-        i++;
-      } else {
+      } else if (currentSyllable === '') {
         currentSyllable += char;
-        i++;
       }
     }
 
@@ -83,24 +71,37 @@ export class TextParserService {
     return syllables;
   }
 
-  private extractFirstVowel(syllable: string): string | null {
-    for (const char of syllable) {
-      if (this.isVowel(char)) return char;
-    }
-    return null;
+  private isLongSyllable(syllable: string, vowels: string[], isLastSyllable: boolean): boolean {
+    if (isLastSyllable) return false;
+
+    const hasLongVowel = this.isLongVowel(vowels[0]);
+    const hasConsonantCluster = this.isLengthenedByCluster(syllable);
+
+    return hasLongVowel || hasConsonantCluster;
   }
 
   private isLengthenedByCluster(syllable: string): boolean {
     const vowelIndex = syllable.search(/[aáeéiíoóöőuúüű]/);
-    if (vowelIndex === -1 || vowelIndex === syllable.length - 1) return false;
+    if (vowelIndex === -1) return false;
 
-    const followingChars = syllable.slice(vowelIndex + 1);
-    const consonantsAfterVowel = this.getConsonantUnits(followingChars);
+    const afterVowel = syllable.slice(vowelIndex + 1);
+    let consonantCount = 0;
+    let i = 0;
 
-    // Csak akkor hosszabbítjuk meg a szótagot, ha legalább két mássalhangzó van,
-    // és a többjegyű mássalhangzók közül egyik sem az "sz", "gy" stb., ami nem hosszabbít
-    return consonantsAfterVowel.length > 1 &&
-      consonantsAfterVowel.some(unit => !['sz', 'gy', 'cs', 'ty', 'ny', 'zs', 'dz', 'ly'].includes(unit.toLowerCase()));
+    while (i < afterVowel.length) {
+      const twoCharUnit = afterVowel.slice(i, i + 2);
+      if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
+        consonantCount++;
+        i += 2;
+      } else if (this.isConsonant(afterVowel[i])) {
+        consonantCount++;
+        i++;
+      } else {
+        i++;
+      }
+    }
+
+    return consonantCount >= 2;
   }
 
   private getConsonantUnits(text: string): string[] {

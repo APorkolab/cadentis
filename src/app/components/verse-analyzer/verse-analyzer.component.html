@@ -1,4 +1,4 @@
-<mat-form-field>
-	<input matInput placeholder="Enter a line of verse" (input)="analyzeVerse($event)" />
+<mat-form-field appearance="fill">
+	<textarea matInput placeholder="Enter your verses" (input)="analyzeVerse($event)" rows="5"></textarea>
 </mat-form-field>
 <app-verse-result [verseLines]="matchedLines" [rhymePattern]="rhymePattern"></app-verse-result>
