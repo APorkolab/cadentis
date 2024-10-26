@@ -1,5 +1,10 @@
 import { Injectable } from '@angular/core';
 
+interface VerseForm {
+  pattern: string;
+  // További tulajdonságok szükség szerint
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -10,22 +15,26 @@ export class TextParserService {
   private readonly PUNCTUATION_MARKS = [',', '!', '.', ';'];
   private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'ly'];
   private readonly CONSONANTS = 'bcdfghjklmnpqrstvwxyz';
+  private readonly verseForms: VerseForm[] = []; // Inicializálja a versformák tömbjét
 
-  parseText(text: string, splitOnPunctuation = false, splitOnLineBreaks = false): { pattern: string; moraCount: number } {
-    const normalizedText = text.toLowerCase();
-    const syllables = this.splitIntoSyllables(normalizedText, splitOnPunctuation, splitOnLineBreaks);
+  parseText(text: string): { pattern: string, moraCount: number } {
+    const syllables = this.splitIntoSyllables(text, true, true);
     let pattern = '';
     let moraCount = 0;
 
     syllables.forEach((syllable, index) => {
       const vowels = this.extractVowels(syllable);
-      if (vowels.length === 0) return;
-
       const isLastSyllable = index === syllables.length - 1;
-      const isLong = this.isLongSyllable(syllable, vowels, isLastSyllable);
 
-      pattern += isLong ? '-' : 'U';
-      moraCount += isLong ? 2 : 1;
+      if (isLastSyllable) {
+        // Az utolsó szótag közömbös (x), használjunk egy speciális jelölést
+        pattern += 'x';
+        moraCount += 1; // vagy 2, attól függően, hogy hogyan szeretnénk számolni
+      } else {
+        const isLong = this.isLongSyllable(syllable, vowels, false);
+        pattern += isLong ? '-' : 'U';
+        moraCount += isLong ? 2 : 1;
+      }
     });
 
     return { pattern, moraCount };
@@ -133,5 +142,16 @@ export class TextParserService {
 
   private isConsonant(char: string): boolean {
     return !this.isVowel(char) && /[a-zA-Z]/.test(char);
+  }
+
+  private findVerseType(pattern: string): VerseForm | undefined {
+    return this.verseForms?.find((form: VerseForm) => {
+      const regexPattern = new RegExp(
+        '^' +
+        form.pattern.replace(/\?/g, '.').replace(/x/g, '[U-]') + // 'x' lehet U vagy -
+        '$'
+      );
+      return regexPattern.test(pattern);
+    });
   }
 }
