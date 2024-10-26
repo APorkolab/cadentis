@@ -11,5 +11,5 @@ import { CommonModule } from '@angular/common';
 })
 export class VerseResultComponent {
   @Input() verseLines: VerseLine[] = [];
-  @Input() rhymePattern: string = '';
+  @Input() rhymePattern: string[] = []; // módosított típus
 }

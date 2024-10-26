@@ -1,21 +1,17 @@
 import { Component } from '@angular/core';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
-import { BrowserModule } from '@angular/platform-browser';
 import { SyllableCounterComponent } from './components/syllable-counter/syllable-counter.component';
 import { VerseAnalyzerComponent } from './components/verse-analyzer/verse-analyzer.component';
 import { VerseResultComponent } from './components/verse-result/verse-result.component';
 import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     RouterOutlet,
-    BrowserModule,
-    MatInputModule,
-    MatFormFieldModule,
+    CommonModule,
     MatButtonModule,
     SyllableCounterComponent,
     VerseAnalyzerComponent,

@@ -16,9 +16,9 @@ import { MatInputModule } from '@angular/material/input';
   styleUrls: ['./verse-analyzer.component.css']
 })
 export class VerseAnalyzerComponent implements OnInit {
-  verseForms: VerseForm[] = [];    // Típus helyesbítve VerseForm[]-re
+  verseForms: VerseForm[] = [];
   matchedLines: VerseLine[] = [];
-  rhymePattern: string = '';
+  rhymePattern: string[] = [];
 
   constructor(
     private verseFormService: VerseFormService,
@@ -37,24 +37,50 @@ export class VerseAnalyzerComponent implements OnInit {
     const lines = inputText.split('\n').map(line => line.trim()).filter(line => line);
 
     this.matchedLines = lines.map(line => {
-      const parsedPattern = this.textParser.parseText(line).pattern;
-      const syllableCount = parsedPattern.split('-').length + parsedPattern.split('U').length - 1;
-      const verseType = this.findVerseType(parsedPattern);
+      const { pattern, moraCount } = this.textParser.parseText(line);
+      const syllableCount = pattern.length;
+      const verseType = this.findVerseType(pattern, moraCount);
+      const substitutions = this.findSubstitutions(pattern, verseType);
+      const lejtesirany = this.findLejtesirany(pattern);
 
       return {
-        meterPattern: parsedPattern,
+        meterPattern: pattern,
         syllableCount,
-        verseType: verseType ? verseType : 'ismeretlen forma',
+        moraCount,
+        verseType: verseType ? verseType.formName : 'ismeretlen forma',
         text: line,
-        rhymeScheme: ''  // Ezt a VerseResultComponent-nek adjuk át
+        rhymeScheme: '',
+        substitutions,
+        lejtesirany
       };
     });
 
     this.rhymePattern = this.rhymeAnalyzer.analyzeRhyme(lines);
   }
 
-  findVerseType(pattern: string): string | null {
-    const matchedForm = this.verseForms.find(form => form.pattern === pattern);
-    return matchedForm ? matchedForm.formName : null;
+  private findVerseType(pattern: string, moraCount: number): VerseForm | undefined {
+    return this.verseForms.find(form =>
+      form.pattern === pattern ||
+      (form.pattern.length === pattern.length && form.moraCount === moraCount)
+    );
+  }
+
+  private findSubstitutions(pattern: string, verseType: VerseForm | undefined): string[] {
+    if (!verseType) return [];
+    const substitutions: string[] = [];
+    for (let i = 0; i < pattern.length; i++) {
+      if (pattern[i] !== verseType.pattern[i]) {
+        substitutions.push(`${pattern[i] === '-' ? 'Hosszú' : 'Rövid'} helyett ${verseType.pattern[i] === '-' ? 'hosszú' : 'rövid'} a ${i + 1}. pozícióban`);
+      }
+    }
+    return substitutions;
+  }
+
+  private findLejtesirany(pattern: string): 'emelkedő' | 'ereszkedő' | 'vegyes' {
+    const emelkedo = pattern.match(/U-/g)?.length || 0;
+    const ereszkedő = pattern.match(/-U/g)?.length || 0;
+    if (emelkedo > ereszkedő) return 'emelkedő';
+    if (ereszkedő > emelkedo) return 'ereszkedő';
+    return 'vegyes';
   }
 }

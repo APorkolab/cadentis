@@ -19,7 +19,7 @@ export class SyllableCounterComponent {
   onTextChange(event: Event): void {
     const inputText = (event.target as HTMLInputElement).value;
     const parsed = this.textParser.parseText(inputText);
-    this.syllableCount = parsed.syllables.length;
+    this.syllableCount = parsed.moraCount;
     this.meterPattern = parsed.pattern;
   }
 }

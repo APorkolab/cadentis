@@ -4,25 +4,26 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class RhymeAnalyzerService {
-  analyzeRhyme(lines: string[]): string {
-    const rhymeScheme: string[] = [];
-    const rhymes: Map<string, string> = new Map();
-    let currentLabel = 'a';
+  analyzeRhyme(lines: string[]): string[] {
+    // Implementáljuk a rímképlet elemzését
+    const rhymePattern: string[] = [];
+    const rhymes: { [key: string]: string } = {};
+    let nextRhyme = 'a';
 
-    lines.forEach(line => {
+    for (const line of lines) {
       const lastWord = this.getLastWord(line);
       const rhymeEnding = this.getRhymeEnding(lastWord);
 
-      if (rhymes.has(rhymeEnding)) {
-        rhymeScheme.push(rhymes.get(rhymeEnding) as string);
+      if (rhymes[rhymeEnding]) {
+        rhymePattern.push(rhymes[rhymeEnding]);
       } else {
-        rhymes.set(rhymeEnding, currentLabel);
-        rhymeScheme.push(currentLabel);
-        currentLabel = String.fromCharCode(currentLabel.charCodeAt(0) + 1);
+        rhymes[rhymeEnding] = nextRhyme;
+        rhymePattern.push(nextRhyme);
+        nextRhyme = String.fromCharCode(nextRhyme.charCodeAt(0) + 1);
       }
-    });
+    }
 
-    return rhymeScheme.join('');
+    return rhymePattern;
   }
 
   private getLastWord(line: string): string {
