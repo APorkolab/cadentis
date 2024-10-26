@@ -7,9 +7,9 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './verse-result.component.html',
-  styleUrl: './verse-result.component.css'
+  styleUrls: ['./verse-result.component.css']
 })
 export class VerseResultComponent {
   @Input() verseLines: VerseLine[] = [];
-  @Input() rhymePattern: string[] = []; // módosított típus
+  @Input() rhymePattern: string[] = [];
 }

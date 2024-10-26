@@ -4,46 +4,133 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class TextParserService {
-  private readonly HOSSZU_MAGANHANGZOK = 'áéíóőúű';
-  private readonly ROVID_MAGANHANGZOK = 'aeiouöü';
-  private readonly MAGANHANGZOK = this.HOSSZU_MAGANHANGZOK + this.ROVID_MAGANHANGZOK;
-  private readonly MASSALHANGZOK = 'bcdfghjklmnpqrstvwxyz';
-  private readonly LIKVIDA = 'rl';
-  private readonly ZARHANG = 'ptkbdg';
+  private readonly LONG_VOWELS = 'áéíóőúű';
+  private readonly SHORT_VOWELS = 'aeiouöü';
+  private readonly VOWELS = this.LONG_VOWELS + this.SHORT_VOWELS;
+  private readonly PUNCTUATION_MARKS = [',', '!', '.', ';'];
+  private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'ly', 'Sz', 'Cs', 'Ty', 'Gy', 'Ny', 'Zs', 'Dz', 'Ly'];
+  private readonly CONSONANTS = 'bcdfghjklmnpqrstvwxyz';
 
-  parseText(text: string): { pattern: string, moraCount: number } {
-    const syllables = this.splitIntoSyllables(text);
+  parseText(text: string, splitOnPunctuation = false, splitOnLineBreaks = false): { pattern: string; moraCount: number } {
+    const syllables = this.splitIntoSyllables(text, splitOnPunctuation, splitOnLineBreaks);
     let pattern = '';
     let moraCount = 0;
 
-    syllables.forEach((syllable, index) => {
-      const isLong = this.isLongSyllable(syllable, index === syllables.length - 1);
-      pattern += isLong ? '-' : 'U';
-      moraCount += isLong ? 2 : 1;
-    });
+    for (const syllable of syllables) {
+      const vowels = this.extractVowels(syllable);
+
+      if (vowels.length === 0) continue;
+
+      if (vowels.length === 2 && vowels.every(vowel => this.isShortVowel(vowel))) {
+        pattern += 'UU';
+        moraCount += 2;
+      } else {
+        const isLong = this.isLongVowel(vowels[0]) || this.isLengthenedByCluster(syllable);
+        pattern += isLong ? '-' : 'U';
+        moraCount += isLong ? 2 : 1;
+      }
+    }
 
     return { pattern, moraCount };
   }
 
-  private splitIntoSyllables(text: string): string[] {
-    // Ez egy egyszerűsített szótagolás, a valóságban ennél komplexebb
-    return text.toLowerCase().split(/(?=[aeiouáéíóöőúüű])/);
+  private extractVowels(syllable: string): string[] {
+    return syllable.split('').filter(char => this.isVowel(char));
   }
 
-  private isLongSyllable(syllable: string, isLastSyllable: boolean): boolean {
-    const cleanSyllable = syllable.replace(/[^a-záéíóöőúüű]/g, '');
+  private isShortVowel(vowel: string): boolean {
+    return this.SHORT_VOWELS.includes(vowel);
+  }
 
-    // Természeténél fogva hosszú
-    if (this.HOSSZU_MAGANHANGZOK.includes(cleanSyllable[0])) return true;
+  private splitIntoSyllables(text: string, splitOnPunctuation: boolean, splitOnLineBreaks: boolean): string[] {
+    const syllables = [];
+    let currentSyllable = '';
+    let i = 0;
 
-    // Helyzeténél fogva hosszú
-    if (cleanSyllable.length > 2) return true;
-    if (cleanSyllable.length === 2 && this.MASSALHANGZOK.includes(cleanSyllable[1])) return true;
+    while (i < text.length) {
+      const char = text[i];
+      const twoCharUnit = text.slice(i, i + 2);
 
-    // Speciális esetek
-    if (syllable.includes('a ') && !isLastSyllable) return true; // "a" névelő lehet hosszú
-    if (this.ZARHANG.includes(cleanSyllable[1]) && this.LIKVIDA.includes(cleanSyllable[2])) return false;
+      if (this.isVowel(char.toLowerCase())) {
+        if (currentSyllable) syllables.push(currentSyllable);
+        currentSyllable = char;
+        i++;
+      } else if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
+        if (currentSyllable === '') {
+          currentSyllable += twoCharUnit;
+        } else {
+          currentSyllable += twoCharUnit;
+          syllables.push(currentSyllable);
+          currentSyllable = '';
+        }
+        i += 2;
+      } else if (
+        (splitOnPunctuation && this.PUNCTUATION_MARKS.includes(char)) ||
+        (splitOnLineBreaks && char === '\n')
+      ) {
+        if (currentSyllable) {
+          syllables.push(currentSyllable);
+          currentSyllable = '';
+        }
+        i++;
+      } else {
+        currentSyllable += char;
+        i++;
+      }
+    }
 
-    return false;
+    if (currentSyllable) syllables.push(currentSyllable);
+    return syllables;
+  }
+
+  private extractFirstVowel(syllable: string): string | null {
+    for (const char of syllable) {
+      if (this.isVowel(char)) return char;
+    }
+    return null;
+  }
+
+  private isLengthenedByCluster(syllable: string): boolean {
+    const vowelIndex = syllable.search(/[aáeéiíoóöőuúüű]/);
+    if (vowelIndex === -1 || vowelIndex === syllable.length - 1) return false;
+
+    const followingChars = syllable.slice(vowelIndex + 1);
+    const consonantsAfterVowel = this.getConsonantUnits(followingChars);
+
+    // Csak akkor hosszabbítjuk meg a szótagot, ha legalább két mássalhangzó van,
+    // és a többjegyű mássalhangzók közül egyik sem az "sz", "gy" stb., ami nem hosszabbít
+    return consonantsAfterVowel.length > 1 &&
+      consonantsAfterVowel.some(unit => !['sz', 'gy', 'cs', 'ty', 'ny', 'zs', 'dz', 'ly'].includes(unit.toLowerCase()));
+  }
+
+  private getConsonantUnits(text: string): string[] {
+    const units = [];
+    let i = 0;
+
+    while (i < text.length) {
+      const twoCharUnit = text.slice(i, i + 2);
+      if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
+        units.push(twoCharUnit);
+        i += 2;
+      } else if (this.isConsonant(text[i])) {
+        units.push(text[i]);
+        i++;
+      } else {
+        i++;
+      }
+    }
+    return units;
+  }
+
+  private isLongVowel(vowel: string): boolean {
+    return this.LONG_VOWELS.includes(vowel);
+  }
+
+  private isVowel(char: string): boolean {
+    return this.VOWELS.includes(char);
+  }
+
+  private isConsonant(char: string): boolean {
+    return !this.isVowel(char) && /[a-zA-Z]/.test(char);
   }
 }

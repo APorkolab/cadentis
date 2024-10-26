@@ -41,17 +41,17 @@ export class VerseAnalyzerComponent implements OnInit {
       const syllableCount = pattern.length;
       const verseType = this.findVerseType(pattern, moraCount);
       const substitutions = this.findSubstitutions(pattern, verseType);
-      const lejtesirany = this.findLejtesirany(pattern);
+      const lejtesirany = this.findMeterDirection(pattern); // Updated to `lejtesirany` to match VerseLine type
 
       return {
         meterPattern: pattern,
         syllableCount,
         moraCount,
-        verseType: verseType ? verseType.formName : 'ismeretlen forma',
+        verseType: verseType ? verseType.formName : 'unknown form',
         text: line,
         rhymeScheme: '',
         substitutions,
-        lejtesirany
+        lejtesirany // Updated to `lejtesirany`
       };
     });
 
@@ -70,17 +70,17 @@ export class VerseAnalyzerComponent implements OnInit {
     const substitutions: string[] = [];
     for (let i = 0; i < pattern.length; i++) {
       if (pattern[i] !== verseType.pattern[i]) {
-        substitutions.push(`${pattern[i] === '-' ? 'Hosszú' : 'Rövid'} helyett ${verseType.pattern[i] === '-' ? 'hosszú' : 'rövid'} a ${i + 1}. pozícióban`);
+        substitutions.push(`${pattern[i] === '-' ? 'Long' : 'Short'} instead of ${verseType.pattern[i] === '-' ? 'long' : 'short'} at position ${i + 1}`);
       }
     }
     return substitutions;
   }
 
-  private findLejtesirany(pattern: string): 'emelkedő' | 'ereszkedő' | 'vegyes' {
-    const emelkedo = pattern.match(/U-/g)?.length || 0;
-    const ereszkedő = pattern.match(/-U/g)?.length || 0;
-    if (emelkedo > ereszkedő) return 'emelkedő';
-    if (ereszkedő > emelkedo) return 'ereszkedő';
+  private findMeterDirection(pattern: string): 'emelkedő' | 'ereszkedő' | 'vegyes' {
+    const rising = pattern.match(/U-/g)?.length || 0;
+    const falling = pattern.match(/-U/g)?.length || 0;
+    if (rising > falling) return 'emelkedő';
+    if (falling > rising) return 'ereszkedő';
     return 'vegyes';
   }
 }

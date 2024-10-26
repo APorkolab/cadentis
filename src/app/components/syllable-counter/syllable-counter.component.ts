@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
   standalone: true,
   imports: [MatFormFieldModule, MatInputModule],
   templateUrl: './syllable-counter.component.html',
-  styleUrl: './syllable-counter.component.css'
+  styleUrls: ['./syllable-counter.component.css']
 })
 export class SyllableCounterComponent {
   syllableCount: number = 0;
