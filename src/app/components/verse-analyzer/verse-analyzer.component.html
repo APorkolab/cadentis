@@ -1,4 +1,6 @@
-<mat-form-field appearance="fill">
-	<textarea matInput placeholder="Enter your verses" (input)="analyzeVerse($event)" rows="5"></textarea>
-</mat-form-field>
-<app-verse-result [verseLines]="matchedLines" [rhymePattern]="rhymePattern"></app-verse-result>
+<div class="verse-analyzer-container">
+	<mat-form-field appearance="fill" class="verse-input">
+		<textarea matInput placeholder="Enter your verses" (input)="analyzeVerse($event)" rows="5"></textarea>
+	</mat-form-field>
+	<app-verse-result [verseLines]="matchedLines" [rhymePattern]="rhymePattern"></app-verse-result>
+</div>

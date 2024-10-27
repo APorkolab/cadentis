@@ -32,17 +32,30 @@ export class VerseAnalyzerComponent implements OnInit {
     });
   }
 
-  private patternSimilarity(pattern1: string, pattern2: string): number {
-    const minLength = Math.min(pattern1.length, pattern2.length);
-    let matches = 0;
-    for (let i = 0; i < minLength; i++) {
-      if (pattern1[i] === pattern2[i]) matches++;
-    }
-    return matches / Math.max(pattern1.length, pattern2.length);
+  private isHexameter(pattern: string): boolean {
+    if (!pattern.endsWith('x')) return false;
+
+    const mainPattern = pattern.slice(0, -1);
+    if (mainPattern.length < 12 || mainPattern.length > 16) return false;
+    if (!/^[-U]+$/.test(mainPattern)) return false;
+    if (!mainPattern.includes('-UU')) return false;
+    if (pattern.endsWith('-UU-UUx')) return false;
+
+    return mainPattern.endsWith('U-U') || mainPattern.endsWith('UU-');
+  }
+
+  private isPentameter(pattern: string): boolean {
+    if (!pattern.endsWith('x')) return false;
+    if (!pattern.endsWith('-UU-UUx')) return false;
+
+    const firstHalf = pattern.slice(0, -7);
+    if (!/^[-U]+$/.test(firstHalf)) return false;
+    if (pattern.length < 12 || pattern.length > 14) return false;
+
+    return true;
   }
 
   private findVerseType(pattern: string, moraCount: number): { form: VerseForm | undefined, approximate: boolean } {
-    // Speciális minták ellenőrzése először
     if (this.isHexameter(pattern)) {
       return { form: this.verseForms.find(form => form.formName === 'hexameter'), approximate: false };
     }
@@ -50,13 +63,12 @@ export class VerseAnalyzerComponent implements OnInit {
       return { form: this.verseForms.find(form => form.formName === 'pentameter'), approximate: false };
     }
 
-    // Ha nem speciális minta, akkor keresés hasonlóság alapján
     let bestMatch: VerseForm | undefined;
     let bestSimilarity = 0;
 
     this.verseForms.forEach(form => {
       const similarity = this.patternSimilarity(pattern, form.pattern);
-      if (similarity > bestSimilarity) { // Csak a legjobb egyezést keressük
+      if (similarity > bestSimilarity) {
         bestMatch = form;
         bestSimilarity = similarity;
       }
@@ -68,43 +80,13 @@ export class VerseAnalyzerComponent implements OnInit {
     };
   }
 
-  private isHexameter(pattern: string): boolean {
-    // Ellenőrizzük, hogy x-re végződik
-    if (!pattern.endsWith('x')) return false;
-
-    // Vágjuk le az utolsó x-et
-    const mainPattern = pattern.slice(0, -1);
-
-    // Ellenőrizzük a hosszt (12-16 karakter + x)
-    if (mainPattern.length < 12 || mainPattern.length > 16) return false;
-
-    // Csak megengedett karaktereket tartalmazhat
-    if (!/^[-U]+$/.test(mainPattern)) return false;
-
-    // Legalább egy -UU mintának kell lennie benne
-    if (!mainPattern.includes('-UU')) return false;
-
-    // Ne legyen pentameter (kizárjuk a -UU-UUx végződést)
-    if (pattern.endsWith('-UU-UUx')) return false;
-
-    return true;
-  }
-
-  private isPentameter(pattern: string): boolean {
-    // Ellenőrizzük, hogy x-re végződik
-    if (!pattern.endsWith('x')) return false;
-
-    // A pentameter második fele MINDIG -UU-UU
-    if (!pattern.endsWith('-UU-UUx')) return false;
-
-    // Az első fél tetszőleges hosszúságú lehet, de csak - és U karaktereket tartalmazhat
-    const firstHalf = pattern.slice(0, -7);
-    if (!/^[-U]+$/.test(firstHalf)) return false;
-
-    // Ellenőrizzük a teljes hosszt (ne legyen túl hosszú vagy rövid)
-    if (pattern.length < 12 || pattern.length > 14) return false;
-
-    return true;
+  private patternSimilarity(pattern1: string, pattern2: string): number {
+    const minLength = Math.min(pattern1.length, pattern2.length);
+    let matches = 0;
+    for (let i = 0; i < minLength; i++) {
+      if (pattern1[i] === pattern2[i]) matches++;
+    }
+    return matches / Math.max(pattern1.length, pattern2.length);
   }
 
   private findSubstitutions(pattern: string, verseType: VerseForm | undefined): string[] {
@@ -136,19 +118,11 @@ export class VerseAnalyzerComponent implements OnInit {
       const substitutions: string[] = [];
       const lejtesirany = this.findMeterDirection(pattern);
 
-      // Vers típus meghatározása
       const { form, approximate } = this.findVerseType(pattern, moraCount);
       let formName = form ? form.formName : 'unknown form';
 
-      // Csak a közelítő egyezésnél adjuk hozzá a ~ jelet
-      if (approximate) {
-        formName = '~' + formName;
-      }
-
-      // Csak pontos egyezésnél adjuk hozzá a + jelet
-      if (form && !approximate) {
-        formName = '+' + formName;
-      }
+      if (approximate) formName = '~' + formName;
+      if (form && !approximate) formName = '+' + formName;
 
       return {
         meterPattern: pattern,
@@ -162,17 +136,18 @@ export class VerseAnalyzerComponent implements OnInit {
       };
     });
 
-    // Disztichonok azonosítása második körben
     for (let i = 0; i < this.matchedLines.length - 1; i++) {
       if (
         (this.matchedLines[i].verseType === 'hexameter' || this.matchedLines[i].verseType.includes('disztichon')) &&
-        i + 1 < this.matchedLines.length
+        this.matchedLines[i + 1].verseType === 'pentameter'
       ) {
         this.matchedLines[i].verseType = 'disztichon (hexameter)';
         this.matchedLines[i + 1].verseType = 'disztichon (pentameter)';
       }
     }
 
-    this.rhymePattern = this.rhymeAnalyzer.analyzeRhyme(lines);
+    const { pattern, rhymeType } = this.rhymeAnalyzer.analyzeRhyme(lines);
+    this.rhymePattern = pattern;
+
   }
 }
