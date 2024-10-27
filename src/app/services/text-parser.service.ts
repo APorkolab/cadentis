@@ -19,7 +19,7 @@ export class TextParserService {
     const syllables = this.splitIntoSyllables(processedText);
     let pattern = '';
     let moraCount = 0;
-    let syllableCount = syllables.length;
+    const syllableCount = processedText.split('').filter(char => this.isVowel(char)).length;
 
     syllables.forEach(syllable => {
       const vowels = this.extractVowels(syllable);
