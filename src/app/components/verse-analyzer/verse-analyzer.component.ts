@@ -7,11 +7,12 @@ import { VerseResultComponent } from '../verse-result/verse-result.component';
 import { VerseForm } from '../../models/verse-form.model';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-verse-analyzer',
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, VerseResultComponent],
+  imports: [MatFormFieldModule, MatInputModule, VerseResultComponent, CommonModule],
   templateUrl: './verse-analyzer.component.html',
   styleUrls: ['./verse-analyzer.component.css']
 })
@@ -112,10 +113,10 @@ export class VerseAnalyzerComponent implements OnInit {
     const inputText = (event.target as HTMLTextAreaElement).value;
     const lines = inputText.split('\n').map(line => line.trim()).filter(line => line);
 
+    // Kijavítva a mora szám számítására
     this.matchedLines = lines.map((line, index) => {
-      const { pattern, moraCount } = this.textParser.parseText(line);
-      const syllableCount = pattern.length;
-      const substitutions: string[] = [];
+      const { pattern, syllableCount, moraCount } = this.textParser.parseText(line);
+      const substitutions: string[] = this.findSubstitutions(pattern, this.findVerseType(pattern, moraCount).form);
       const lejtesirany = this.findMeterDirection(pattern);
 
       const { form, approximate } = this.findVerseType(pattern, moraCount);
@@ -148,6 +149,5 @@ export class VerseAnalyzerComponent implements OnInit {
 
     const { pattern, rhymeType } = this.rhymeAnalyzer.analyzeRhyme(lines);
     this.rhymePattern = pattern;
-
   }
 }

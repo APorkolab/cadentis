@@ -2,5 +2,29 @@
 	<mat-form-field appearance="fill" class="verse-input">
 		<textarea matInput placeholder="Enter your verses" (input)="analyzeVerse($event)" rows="5"></textarea>
 	</mat-form-field>
-	<app-verse-result [verseLines]="matchedLines" [rhymePattern]="rhymePattern"></app-verse-result>
+
+	<table class="verse-result-table">
+		<thead>
+			<tr>
+				<th>Pattern</th>
+				<th>Syllable Count</th>
+				<th>Mora Count</th>
+				<th>Verse Type</th>
+				<th>Text</th>
+				<th>Substitutions</th>
+				<th>Lejtésirány</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr *ngFor="let line of matchedLines">
+				<td>{{ line.meterPattern }}</td>
+				<td>{{ line.syllableCount }}</td>
+				<td>{{ line.moraCount }}</td>
+				<td>{{ line.verseType }}</td>
+				<td>{{ line.text }}</td>
+				<td>{{ line.substitutions.join(', ') }}</td>
+				<td>{{ line.lejtesirany }}</td>
+			</tr>
+		</tbody>
+	</table>
 </div>

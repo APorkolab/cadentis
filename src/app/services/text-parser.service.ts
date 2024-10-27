@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 
 interface VerseForm {
   pattern: string;
-  // További tulajdonságok szükség szerint
 }
 
 @Injectable({
@@ -12,77 +11,58 @@ export class TextParserService {
   private readonly LONG_VOWELS = 'áéíóőúű';
   private readonly SHORT_VOWELS = 'aeiouöü';
   private readonly VOWELS = this.LONG_VOWELS + this.SHORT_VOWELS;
-  private readonly PUNCTUATION_MARKS = [',', '!', '.', ';'];
   private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'ly'];
-  private readonly CONSONANTS = 'bcdfghjklmnpqrstvwxyz';
-  private readonly verseForms: VerseForm[] = []; // Inicializálja a versformák tömbjét
+  private readonly verseForms: VerseForm[] = [];
 
-  parseText(text: string): { pattern: string, moraCount: number } {
-    const syllables = this.splitIntoSyllables(text, true, true);
+  parseText(text: string): { pattern: string, syllableCount: number, moraCount: number } {
+    const processedText = text.toLowerCase();
+    const syllables = this.splitIntoSyllables(processedText);
     let pattern = '';
     let moraCount = 0;
+    let syllableCount = syllables.length;
 
-    syllables.forEach((syllable, index) => {
+    syllables.forEach(syllable => {
       const vowels = this.extractVowels(syllable);
-      const isLastSyllable = index === syllables.length - 1;
+      if (vowels.length === 0) return;
 
-      if (isLastSyllable) {
-        // Az utolsó szótag közömbös (x), használjunk egy speciális jelölést
-        pattern += 'x';
-        moraCount += 1; // vagy 2, attól függően, hogy hogyan szeretnénk számolni
-      } else {
-        const isLong = this.isLongSyllable(syllable, vowels, false);
-        pattern += isLong ? '-' : 'U';
-        moraCount += isLong ? 2 : 1;
-      }
+      const isLong = this.isLongSyllable(syllable, vowels);
+      pattern += isLong ? '-' : 'U';
+      moraCount += isLong ? 2 : 1; // Hosszú szótag: 2 mora, rövid: 1 mora
     });
 
-    return { pattern, moraCount };
+    return { pattern, syllableCount, moraCount };
   }
 
   private extractVowels(syllable: string): string[] {
     return syllable.split('').filter(char => this.isVowel(char));
   }
 
-  private splitIntoSyllables(text: string, splitOnPunctuation: boolean, splitOnLineBreaks: boolean): string[] {
+  private splitIntoSyllables(text: string): string[] {
+    const cleanText = text.replace(/[,.!?;:]/g, ''); // Írásjelek eltávolítása
     const syllables: string[] = [];
     let currentSyllable = '';
 
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      const twoCharUnit = text.slice(i, i + 2);
+    for (let i = 0; i < cleanText.length; i++) {
+      const char = cleanText[i];
 
       if (this.isVowel(char)) {
-        currentSyllable += char;
-        // Következő karakterek hozzáadása a szótaghoz
-        let j = i + 1;
-        while (j < text.length && !this.isVowel(text[j])) {
-          currentSyllable += text[j];
-          j++;
-        }
-        syllables.push(currentSyllable);
-        currentSyllable = '';
-        i = j - 1;
-      } else if (
-        (splitOnPunctuation && this.PUNCTUATION_MARKS.includes(char)) ||
-        (splitOnLineBreaks && char === '\n')
-      ) {
         if (currentSyllable) {
           syllables.push(currentSyllable);
-          currentSyllable = '';
         }
-      } else if (currentSyllable === '') {
+        currentSyllable = char;
+      } else {
         currentSyllable += char;
       }
     }
 
-    if (currentSyllable) syllables.push(currentSyllable);
-    return syllables;
+    if (currentSyllable) {
+      syllables.push(currentSyllable);
+    }
+
+    return syllables.filter(s => s.trim());
   }
 
-  private isLongSyllable(syllable: string, vowels: string[], isLastSyllable: boolean): boolean {
-    if (isLastSyllable) return false;
-
+  private isLongSyllable(syllable: string, vowels: string[]): boolean {
     const hasLongVowel = this.isLongVowel(vowels[0]);
     const hasConsonantCluster = this.isLengthenedByCluster(syllable);
 
@@ -113,25 +93,6 @@ export class TextParserService {
     return consonantCount >= 2;
   }
 
-  private getConsonantUnits(text: string): string[] {
-    const units = [];
-    let i = 0;
-
-    while (i < text.length) {
-      const twoCharUnit = text.slice(i, i + 2);
-      if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
-        units.push(twoCharUnit);
-        i += 2;
-      } else if (this.isConsonant(text[i])) {
-        units.push(text[i]);
-        i++;
-      } else {
-        i++;
-      }
-    }
-    return units;
-  }
-
   private isLongVowel(vowel: string): boolean {
     return this.LONG_VOWELS.includes(vowel);
   }
@@ -142,16 +103,5 @@ export class TextParserService {
 
   private isConsonant(char: string): boolean {
     return !this.isVowel(char) && /[a-zA-Z]/.test(char);
-  }
-
-  private findVerseType(pattern: string): VerseForm | undefined {
-    return this.verseForms?.find((form: VerseForm) => {
-      const regexPattern = new RegExp(
-        '^' +
-        form.pattern.replace(/\?/g, '.').replace(/x/g, '[U-]') + // 'x' lehet U vagy -
-        '$'
-      );
-      return regexPattern.test(pattern);
-    });
   }
 }

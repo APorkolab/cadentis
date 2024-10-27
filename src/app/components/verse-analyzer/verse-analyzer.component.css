@@ -69,3 +69,21 @@ app-verse-result {
     font-size: 14px;
   }
 }
+
+.verse-result-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.verse-result-table th,
+.verse-result-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.verse-result-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
