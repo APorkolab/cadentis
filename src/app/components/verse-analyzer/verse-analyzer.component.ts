@@ -113,7 +113,7 @@ export class VerseAnalyzerComponent implements OnInit {
     const inputText = (event.target as HTMLTextAreaElement).value;
     const lines = inputText.split('\n').map(line => line.trim()).filter(line => line);
 
-    // Kijavítva a mora szám számítására
+    // Elemzés végrehajtása minden sorra
     this.matchedLines = lines.map((line, index) => {
       const { pattern, syllableCount, moraCount } = this.textParser.parseText(line);
       const substitutions: string[] = this.findSubstitutions(pattern, this.findVerseType(pattern, moraCount).form);
@@ -131,11 +131,21 @@ export class VerseAnalyzerComponent implements OnInit {
         moraCount,
         verseType: formName,
         text: line,
-        rhymeScheme: '',
+        rhymeScheme: '', // Ideiglenes érték, amelyet később módosítunk
         substitutions,
         lejtesirany
       };
     });
+
+    // Rímminta elemzés
+    const { pattern: rhymePattern, rhymeType } = this.rhymeAnalyzer.analyzeRhyme(lines);
+    this.rhymePattern = rhymePattern;
+
+    // A matchedLines frissítése a rhymePattern adataival
+    this.matchedLines = this.matchedLines.map((line, index) => ({
+      ...line,
+      rhymeScheme: rhymePattern[index] || ''
+    }));
 
     for (let i = 0; i < this.matchedLines.length - 1; i++) {
       if (
@@ -146,8 +156,6 @@ export class VerseAnalyzerComponent implements OnInit {
         this.matchedLines[i + 1].verseType = 'disztichon (pentameter)';
       }
     }
-
-    const { pattern, rhymeType } = this.rhymeAnalyzer.analyzeRhyme(lines);
-    this.rhymePattern = pattern;
   }
+
 }

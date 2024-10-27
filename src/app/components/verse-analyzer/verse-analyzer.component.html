@@ -7,6 +7,7 @@
 		<thead>
 			<tr>
 				<th>Pattern</th>
+				<th>Rhyme Pattern</th>
 				<th>Syllable Count</th>
 				<th>Mora Count</th>
 				<th>Verse Type</th>
@@ -18,6 +19,7 @@
 		<tbody>
 			<tr *ngFor="let line of matchedLines">
 				<td>{{ line.meterPattern }}</td>
+				<td>{{ line.rhymeScheme }}</td>
 				<td>{{ line.syllableCount }}</td>
 				<td>{{ line.moraCount }}</td>
 				<td>{{ line.verseType }}</td>
