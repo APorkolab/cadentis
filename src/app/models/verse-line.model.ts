@@ -7,4 +7,5 @@ export interface VerseLine {
 	rhymeScheme: string;      // Rímképlet (pl. "a", "b", stb.)
 	substitutions: string[];  // Helyettesítések listája
 	lejtesirany: 'emelkedő' | 'ereszkedő' | 'vegyes';
+	isDisztichonPart?: boolean;  // új tulajdonság
 }

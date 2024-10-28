@@ -34,84 +34,55 @@ export class VerseAnalyzerComponent implements OnInit {
   }
 
   private isHexameter(pattern: string): boolean {
-    const mainPattern = pattern.replace(/x$/, '');
+    const mainPattern = pattern.replace(/[x\?]$/, '');  // x és ? karakterek eltávolítása a végéről
 
-    // 1. Alapvető hosszellenőrzés (6 versláb)
+    // Hosszellenőrzés: 5 teljes láb + 1 csonka láb (13-17 karakter)
     if (mainPattern.length < 13 || mainPattern.length > 17) {
       return false;
     }
 
-    // 2. Csak hosszú és rövid szótagokat tartalmazhat
+    // Csak megengedett karakterek (-U)
     if (!/^[-U]+$/.test(mainPattern)) {
       return false;
     }
 
-    // 3. Az utolsó előtti láb MINDIG daktilus (-UU)
-    const lastSixChars = mainPattern.slice(-6);
-    if (!lastSixChars.startsWith('-UU')) {
+    // Az első négy láb ellenőrzése (daktilusok vagy spondeusok)
+    const firstFourFeet = mainPattern.slice(0, -5);
+    const feetPattern = /^(-UU|--)+$/;
+    if (!feetPattern.test(firstFourFeet)) {
       return false;
     }
 
-    // 4. Az utolsó láb mindig spondeus (--) vagy trocheus (-U)
-    if (!mainPattern.endsWith('--') && !mainPattern.endsWith('-U')) {
+    // Az ötödik láb kötelezően daktilus (-UU)
+    const fifthFoot = mainPattern.slice(-5, -2);
+    if (fifthFoot !== '-UU') {
       return false;
     }
 
-    // 5. Legalább egy daktilusnak (-UU) kell lennie az első négy lábban
-    const firstPart = mainPattern.slice(0, -4);
-    if (!firstPart.includes('-UU')) {
-      return false;
-    }
-
-    // 6. A lábak csak daktilusok (-UU) vagy spondeusok (--) lehetnek
-    const feet = [];
-    for (let i = 0; i < mainPattern.length - 2; i += 3) {
-      const foot = mainPattern.substr(i, 3);
-      if (foot !== '-UU' && foot !== '--') {
-        // Ha nem teljes láb, akkor az utolsónál vagyunk
-        if (i + 3 >= mainPattern.length) break;
-        return false;
-      }
-    }
-
-    return true;
+    // Az utolsó láb spondeus vagy trocheus
+    const lastFoot = mainPattern.slice(-2);
+    return lastFoot === '--' || lastFoot === '-U';
   }
 
   private isPentameter(pattern: string): boolean {
-    const mainPattern = pattern.replace(/x$/, '');
+    const mainPattern = pattern.replace(/[x\?]$/, '');
 
-    // 1. A pentameter két félsorra oszlik, középen cezúrával
-    // Mindkét félsor: daktilus + daktilus + csonka spondeus
-    // Második félsor MINDIG két daktilus + csonka spondeus
-
-    // 2. Ellenőrizzük a második félsort (mindig -UU-UU-)
-    if (!mainPattern.endsWith('-UU-UU-')) {
+    // Pentameter teljes hossza: 12-14 karakter
+    if (mainPattern.length < 12 || mainPattern.length > 14) {
       return false;
     }
 
-    // 3. Az első félsor ellenőrzése
-    const firstHalf = mainPattern.slice(0, -7); // -7 mert a második félsor 7 karakter (-UU-UU-)
-
-    // 4. Az első félsorban lehet egy spondeus a daktilusok helyett
-    // Lehetséges minták az első félsorban:
-    const validFirstHalves = [
-      '-UU-UU-',  // két daktilus
-      '--U-UU-',  // spondeus + daktilus
-      '-UU---',   // daktilus + spondeus
-      '----'      // két spondeus
-    ];
-
-    if (!validFirstHalves.includes(firstHalf)) {
+    // Második félsor fix: -UU-UU-
+    const secondHalf = mainPattern.slice(-7);
+    if (secondHalf !== '-UU-UU-') {
       return false;
     }
 
-    // 5. Teljes hossz ellenőrzése
-    // Első félsor (7) + második félsor (7) = 14 karakter
-    if (mainPattern.length !== 14) {
-      return false;
-    }
+    // Első félsor: két láb (daktilus vagy spondeus) + egy hosszú szótag
+    const firstHalf = mainPattern.slice(0, -7);
+    const validFirstHalf = /^(-UU|--)(-UU|--)[-]$/;
 
-    return true;
+    return validFirstHalf.test(firstHalf);
   }
 
   private findVerseType(pattern: string, moraCount: number): { form: VerseForm | undefined, approximate: boolean } {
@@ -210,11 +181,13 @@ export class VerseAnalyzerComponent implements OnInit {
       const currentLine = this.matchedLines[i];
       const nextLine = this.matchedLines[i + 1];
 
-      // Ellenőrizzük a hexameter-pentameter párt
       if (this.isHexameter(currentLine.meterPattern) &&
         this.isPentameter(nextLine.meterPattern)) {
-        currentLine.verseType = 'disztichon (hexameter)';
-        nextLine.verseType = 'disztichon (pentameter)';
+        currentLine.verseType = '+disztichon (hexameter)';
+        nextLine.verseType = '+disztichon (pentameter)';
+        // Mindkét sort megjelöljük a disztichon részeként
+        currentLine.isDisztichonPart = true;
+        nextLine.isDisztichonPart = true;
       }
     }
   }
