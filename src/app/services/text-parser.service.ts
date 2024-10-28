@@ -21,13 +21,24 @@ export class TextParserService {
     let moraCount = 0;
     const syllableCount = processedText.split('').filter(char => this.isVowel(char)).length;
 
-    syllables.forEach(syllable => {
+    syllables.forEach((syllable, index) => {
       const vowels = this.extractVowels(syllable);
       if (vowels.length === 0) return;
 
-      const isLong = this.isLongSyllable(syllable, vowels);
-      pattern += isLong ? '-' : 'U';
-      moraCount += isLong ? 2 : 1; // Hosszú szótag: 2 mora, rövid: 1 mora
+      // Ha ez az utolsó szótag
+      if (index === syllables.length - 1) {
+        if (pattern.endsWith('?')) {
+          pattern = pattern.slice(0, -1) + '-'; // Közömbös szótag esetén hosszú
+          moraCount += 2;
+        } else {
+          pattern += '-'; // Minden utolsó szótag hosszú
+          moraCount += 2;
+        }
+      } else {
+        const isLong = this.isLongSyllable(syllable, vowels);
+        pattern += isLong ? '-' : 'U';
+        moraCount += isLong ? 2 : 1;
+      }
     });
 
     return { pattern, syllableCount, moraCount };

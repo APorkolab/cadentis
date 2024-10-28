@@ -7,41 +7,46 @@ export class RhymeAnalyzerService {
   private readonly vowelList = ['a', 'á', 'e', 'é', 'i', 'í', 'o', 'ó', 'ö', 'ő', 'u', 'ú', 'ü', 'ű'];
 
   analyzeRhyme(lines: string[]): { pattern: string[], rhymeType: string } {
-    // Versszakok szétválasztása
-    const stanzas: string[][] = [];
-    let currentStanza: string[] = [];
+    const endings = lines.map(line => this.getLastSyllable(line.trim()));
+    const pattern: string[] = [];  // Üres mintával kezdünk
+    let nextRhyme = 'a';
 
-    for (const line of lines) {
-      if (line.trim() === '') {
-        if (currentStanza.length > 0) {
-          stanzas.push(currentStanza);
-          currentStanza = [];
+    // Az első sort ideiglenesen x-nek jelöljük
+    pattern[0] = 'x';
+
+    // Minden sort összehasonlítunk az összes többivel
+    for (let i = 1; i < endings.length; i++) {
+      let foundRhyme = false;
+
+      // Összehasonlítjuk az összes korábbi sorral
+      for (let j = 0; j < i; j++) {
+        if (this.isRhyming(endings[i], endings[j])) {
+          if (pattern[j] === 'x') {
+            // Ha egy x-szel jelölt sorral rímel, mindkettő új betűt kap
+            pattern[j] = pattern[i] = nextRhyme;
+            nextRhyme = String.fromCharCode(nextRhyme.charCodeAt(0) + 1);
+          } else {
+            // Ha egy már jelölt sorral rímel, ugyanazt a betűt kapja
+            pattern[i] = pattern[j];
+          }
+          foundRhyme = true;
+          break;
         }
-      } else {
-        currentStanza.push(line);
+      }
+
+      // Ha nem találtunk rímet, x-et kap
+      if (!foundRhyme) {
+        pattern[i] = 'x';
       }
     }
-    if (currentStanza.length > 0) {
-      stanzas.push(currentStanza);
-    }
 
-    // Minden versszakot külön elemzünk
-    const patterns: string[] = [];
-    for (const stanza of stanzas) {
-      const stanzaPattern = this.analyzeStanza(stanza);
-      patterns.push(...stanzaPattern);
-    }
-
-    return {
-      pattern: patterns,
-      rhymeType: this.identifyRhymeType(patterns)
-    };
+    return { pattern, rhymeType: this.identifyRhymeType(pattern) };
   }
 
-  private analyzeStanza(lines: string[]): string[] {
+  private analyzeStanza(lines: string[], startRhyme: string, alphabetRepeat: number): [string[], string, number] {
     const rhymePattern: string[] = [];
-    let nextRhyme = 'a';  // Az első rímpár 'a' betűt kap
-    const rhymeMap = new Map<string, string>();  // A végződések és betűk párosítása
+    const rhymeMap = new Map<string, string>();
+    let nextRhyme = startRhyme;
 
     // Először gyűjtsük ki az összes végződést
     const endings = lines.map(line => {
@@ -49,11 +54,11 @@ export class RhymeAnalyzerService {
       return this.extractEndingVowels(lastWord);
     });
 
-    // Minden sorhoz keressünk rímet
+    // Minden sorhoz keressünk rímet az aktuális versszakon belül
     for (let i = 0; i < endings.length; i++) {
       const currentEnding = endings[i];
 
-      // Keressük meg, hogy van-e már ilyen rím
+      // Keressünk rímet a versszakon belül
       let foundMatch = false;
       for (const [ending, rhyme] of rhymeMap.entries()) {
         if (this.isRhyming(currentEnding, ending)) {
@@ -65,19 +70,20 @@ export class RhymeAnalyzerService {
 
       // Ha nem találtunk rímet
       if (!foundMatch) {
-        // Ha páros sor és még nincs rím hozzá, új betűt kap
-        if (i % 2 === 1) {
-          rhymeMap.set(currentEnding, nextRhyme);
-          rhymePattern[i] = nextRhyme;
-          nextRhyme = String.fromCharCode(nextRhyme.charCodeAt(0) + 1);
-        } else {
-          // Páratlan sor x-et kap
-          rhymePattern[i] = 'x';
+        // Ha még nincs rím ehhez a végződéshez, új betűt kap
+        rhymeMap.set(currentEnding, nextRhyme);
+        rhymePattern[i] = nextRhyme;
+
+        // Következő rím betűjének meghatározása
+        nextRhyme = String.fromCharCode(nextRhyme.charCodeAt(0) + 1);
+        if (nextRhyme > 'z') {
+          alphabetRepeat++;
+          nextRhyme = 'a'.repeat(alphabetRepeat);
         }
       }
     }
 
-    return rhymePattern;
+    return [rhymePattern, nextRhyme, alphabetRepeat];
   }
 
   private getLastWord(line: string): string {
@@ -151,16 +157,35 @@ export class RhymeAnalyzerService {
   }
 
   private identifyRhymeType(rhymePattern: string[]): string {
-    const patternStr = rhymePattern.join('');
+    // Először normalizáljuk a mintát (az egyszer előforduló betűket x-re cseréljük)
+    const pattern = [...rhymePattern];
+    this.normalizePattern(pattern);
 
-    // Először a félrímet ellenőrizzük
-    if (/^x?ax?a$/.test(patternStr)) return 'Félrím (xAxA vagy AxAx)';
-    // Ezután a specifikusabb mintákat
-    if (/^(.)\1\1\1$/.test(patternStr)) return 'Bokorrím (AAAA...)';
-    if (/^(.)\1([a-z])\2$/.test(patternStr)) return 'Páros rím (AABB)';
-    if (/^(.)[a-z](.)[a-z]$/.test(patternStr)) return 'Keresztrím (ABAB)';
-    if (/^(.)[a-z](.)\2\1$/.test(patternStr)) return 'Ölelkező rím (ABBA)';
+    const patternStr = pattern.join('');
 
+    // Félrím: xaxa vagy axax minta (4 soros versszakokban)
+    if (pattern.length === 4) {
+      // Ellenőrizzük, hogy a páros vagy páratlan sorok rímelnek-e
+      const evenLines = pattern[1] === pattern[3];
+      const oddLines = pattern[0] === pattern[2];
+
+      // Ha csak a páros sorok rímelnek
+      if (evenLines && !oddLines) {
+        return 'Félrím (xaxa)';
+      }
+      // Ha csak a páratlan sorok rímelnek
+      if (oddLines && !evenLines) {
+        return 'Félrím (axax)';
+      }
+    }
+
+    // További rímformák ellenőrzése...
     return 'Ismeretlen rímforma';
+  }
+
+  private getLastSyllable(line: string): string {
+    // Tisztítsuk meg a sort a pontoktól, vesszőktől a split előtt
+    const cleanLine = line.replace(/[!?.,:;]/g, '');
+    return cleanLine.trim().split(' ').pop() || '';
   }
 }
