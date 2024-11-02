@@ -12,6 +12,9 @@ export class TextParserService {
   private readonly SHORT_VOWELS = 'aeiouöü';
   private readonly VOWELS = this.LONG_VOWELS + this.SHORT_VOWELS;
   private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'ly'];
+  private readonly DIPHTHONGS = ['ai', 'au', 'ei', 'eu', 'oi', 'ou', 'ui'];
+  private readonly SPECIAL_CONSONANT_PAIRS = ['kh', 'ph', 'th'];
+
   private readonly verseForms: VerseForm[] = [];
 
   parseText(text: string): { pattern: string, syllableCount: number, moraCount: number } {
@@ -73,11 +76,16 @@ export class TextParserService {
     return syllables.filter(s => s.trim());
   }
 
+  private containsDiphthong(syllable: string): boolean {
+    return this.DIPHTHONGS.some(diphthong => syllable.includes(diphthong));
+  }
+
   private isLongSyllable(syllable: string, vowels: string[]): boolean {
     const hasLongVowel = this.isLongVowel(vowels[0]);
     const hasConsonantCluster = this.isLengthenedByCluster(syllable);
+    const hasDiphthong = this.containsDiphthong(syllable);
 
-    return hasLongVowel || hasConsonantCluster;
+    return hasLongVowel || hasConsonantCluster || hasDiphthong;
   }
 
   private isLengthenedByCluster(syllable: string): boolean {
@@ -90,6 +98,13 @@ export class TextParserService {
 
     while (i < afterVowel.length) {
       const twoCharUnit = afterVowel.slice(i, i + 2);
+
+      // Ha speciális páros, nem növeli a hosszúságot
+      if (this.SPECIAL_CONSONANT_PAIRS.includes(twoCharUnit)) {
+        i += 2;
+        continue; // Ugrás a következő iterációra, mivel ezt nem számoljuk
+      }
+
       if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
         consonantCount++;
         i += 2;
