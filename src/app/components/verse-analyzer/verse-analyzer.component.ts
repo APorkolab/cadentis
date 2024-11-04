@@ -34,26 +34,47 @@ export class VerseAnalyzerComponent implements OnInit {
   }
 
   private isHexameter(pattern: string): boolean {
-    if (!pattern.endsWith('x')) return false;
+    const mainPattern = pattern.replace(/[x\?]$/, '');
 
-    const mainPattern = pattern.slice(0, -1);
-    if (mainPattern.length < 12 || mainPattern.length > 16) return false;
-    if (!/^[-U]+$/.test(mainPattern)) return false;
-    if (!mainPattern.includes('-UU')) return false;
-    if (pattern.endsWith('-UU-UUx')) return false;
+    if (mainPattern.length < 13 || mainPattern.length > 17) {
+      return false;
+    }
 
-    return mainPattern.endsWith('U-U') || mainPattern.endsWith('UU-');
+    if (!/^[-U]+$/.test(mainPattern)) {
+      return false;
+    }
+
+    const firstFourFeet = mainPattern.slice(0, -5);
+    const feetPattern = /^(-UU|--)+$/;
+    if (!feetPattern.test(firstFourFeet)) {
+      return false;
+    }
+
+    const fifthFoot = mainPattern.slice(-5, -2);
+    if (fifthFoot !== '-UU') {
+      return false;
+    }
+
+    const lastFoot = mainPattern.slice(-2);
+    return lastFoot === '--' || lastFoot === '-U';
   }
 
   private isPentameter(pattern: string): boolean {
-    if (!pattern.endsWith('x')) return false;
-    if (!pattern.endsWith('-UU-UUx')) return false;
+    const mainPattern = pattern.replace(/[x\?]$/, '');
 
-    const firstHalf = pattern.slice(0, -7);
-    if (!/^[-U]+$/.test(firstHalf)) return false;
-    if (pattern.length < 12 || pattern.length > 14) return false;
+    if (mainPattern.length < 12 || mainPattern.length > 14) {
+      return false;
+    }
 
-    return true;
+    const secondHalf = mainPattern.slice(-7);
+    if (secondHalf !== '-UU-UU-') {
+      return false;
+    }
+
+    const firstHalf = mainPattern.slice(0, -7);
+    const validFirstHalf = /^(-UU|--)(-UU|--)[-]$/;
+
+    return validFirstHalf.test(firstHalf);
   }
 
   private findVerseType(pattern: string, moraCount: number): { form: VerseForm | undefined, approximate: boolean } {
@@ -113,7 +134,6 @@ export class VerseAnalyzerComponent implements OnInit {
     const inputText = (event.target as HTMLTextAreaElement).value;
     const lines = inputText.split('\n').map(line => line.trim()).filter(line => line);
 
-    // Elemzés végrehajtása minden sorra
     this.matchedLines = lines.map((line, index) => {
       const { pattern, syllableCount, moraCount } = this.textParser.parseText(line);
       const substitutions: string[] = this.findSubstitutions(pattern, this.findVerseType(pattern, moraCount).form);
@@ -131,29 +151,30 @@ export class VerseAnalyzerComponent implements OnInit {
         moraCount,
         verseType: formName,
         text: line,
-        rhymeScheme: '', // Ideiglenes érték, amelyet később módosítunk
+        rhymeScheme: '',
         substitutions,
         lejtesirany
       };
     });
 
-    // Rímminta elemzés
     const { pattern: rhymePattern, rhymeType } = this.rhymeAnalyzer.analyzeRhyme(lines);
     this.rhymePattern = rhymePattern;
 
-    // A matchedLines frissítése a rhymePattern adataival
     this.matchedLines = this.matchedLines.map((line, index) => ({
       ...line,
       rhymeScheme: rhymePattern[index] || ''
     }));
 
-    for (let i = 0; i < this.matchedLines.length - 1; i++) {
-      if (
-        (this.matchedLines[i].verseType === 'hexameter' || this.matchedLines[i].verseType.includes('disztichon')) &&
-        this.matchedLines[i + 1].verseType === 'pentameter'
-      ) {
-        this.matchedLines[i].verseType = 'disztichon (hexameter)';
-        this.matchedLines[i + 1].verseType = 'disztichon (pentameter)';
+    for (let i = 0; i < this.matchedLines.length - 1; i += 2) {
+      const currentLine = this.matchedLines[i];
+      const nextLine = this.matchedLines[i + 1];
+
+      if (this.isHexameter(currentLine.meterPattern) &&
+        this.isPentameter(nextLine.meterPattern)) {
+        currentLine.verseType = '+disztichon (hexameter)';
+        nextLine.verseType = '+disztichon (pentameter)';
+        currentLine.isDisztichonPart = true;
+        nextLine.isDisztichonPart = true;
       }
     }
   }
