@@ -2,3 +2,10 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Custom Snackbar Styling for Global Error Handler */
+.error-snackbar {
+  --mdc-snackbar-container-color: #b00020; /* A standard Material Design error red */
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  --mat-mdc-button-persistent-color: #ffffff;
+}

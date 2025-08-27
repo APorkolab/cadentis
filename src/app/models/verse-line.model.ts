@@ -1,11 +1,13 @@
-export interface VerseLine {
-	meterPattern: string;     // Időmérték mintája (pl. "-U---UU-U-")
-	syllableCount: number;    // Szótagszám
-	moraCount: number;        // Mora szám
-	verseType: string;        // Versforma (pl. "szapphói sor")
-	text: string;             // A verssor szövege
-	rhymeScheme: string;      // Rímképlet (pl. "a", "b", stb.)
-	substitutions: string[];  // Helyettesítések listája
-	lejtesirany: 'emelkedő' | 'ereszkedő' | 'vegyes';
-	isDisztichonPart?: boolean;  // új tulajdonság
+import { MetricalDirection } from './verse.enums';
+
+export class VerseLine {
+  meterPattern: string = '';
+  syllableCount: number = 0;
+  moraCount: number = 0;
+  verseType: string = ''; // Can be a string or a VerseType enum member
+  text: string = '';
+  rhymeScheme: string = '';
+  substitutions: string[] = [];
+  lejtesirany: MetricalDirection = MetricalDirection.Mixed;
+  isDisztichonPart: boolean = false;
 }

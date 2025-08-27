@@ -2,10 +2,10 @@ import { Component } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { SyllableCounterComponent } from './components/syllable-counter/syllable-counter.component';
 
-import { VerseResultComponent } from './components/verse-result/verse-result.component';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { VerseAnalyzerComponent } from './components/verse-analyzer/verse-analyzer.component';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-root',
@@ -16,7 +16,7 @@ import { VerseAnalyzerComponent } from './components/verse-analyzer/verse-analyz
     MatButtonModule,
     SyllableCounterComponent,
     VerseAnalyzerComponent,
-    VerseResultComponent
+    MatSnackBarModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'

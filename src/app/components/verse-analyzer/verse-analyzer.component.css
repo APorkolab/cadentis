@@ -1,25 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Advent+Pro:ital,wght@0,100..900;1,100..900&family=Oxanium:wght@200..800&display=swap');
 
+:host {
+  --primary-color: #5a33db;
+  --secondary-color: #ec8fdd;
+  --background-dark1: #1a1a1a;
+  --background-dark2: #232323;
+  --text-color: #f0f0f0;
+  --surface-color: #282828;
+  --surface-hover: #3f3f3f;
+  --border-color: #444444;
+}
+
 * {
   font-family: "Oxanium", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Dark Mode Container */
 .verse-analyzer-container {
   display: flex;
   flex-direction: column;
+  gap: 2rem;
   align-items: center;
   padding: 2rem;
   max-width: 90rem;
   margin: 2rem auto;
-  background: linear-gradient(145deg, #1a1a1a, #232323);
-  color: #f0f0f0;
+  background: linear-gradient(145deg, var(--background-dark1), var(--background-dark2));
+  color: var(--text-color);
   border-radius: 12px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
   transition: all 0.3s ease-in-out;
@@ -27,104 +35,80 @@
 
 .verse-analyzer-container:hover {
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.6);
-  transform: scale(1.02);
+  transform: scale(1.01);
 }
 
-/* Textarea styling */
+/* --- Card and Form Styling --- */
+mat-card {
+  background-color: transparent !important;
+  width: 100%;
+  box-shadow: none !important;
+}
+
+mat-card-title {
+  font-family: "Advent Pro", sans-serif;
+  font-size: 2rem;
+  color: var(--secondary-color);
+  text-shadow: 0 0 5px var(--secondary-color);
+}
+
+mat-card-subtitle {
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
 .verse-input {
   width: 100%;
-  margin-bottom: 1.5rem;
 }
 
-textarea {
-  font-family: "Oxanium", sans-serif;
-  font-size: 1rem;
-  color: #ffffff;
-  background-color: #333333;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #555555;
-  resize: vertical;
-  transition: border-color 0.3s, box-shadow 0.3s;
+/* --- Progress Bar --- */
+mat-progress-bar {
+  margin-top: 1rem;
 }
 
-textarea::placeholder {
-  color: #bbbbbb;
+/* --- Material Table Styling --- */
+.result-card {
+  margin-top: 1rem;
 }
 
-textarea:focus {
-  outline: none;
-  border-color: #5a33db;
-  box-shadow: 0 0 10px rgba(90, 51, 219, 0.5);
-}
-
-/* Verse result styling */
-app-verse-result {
-  width: 100%;
-  margin-top: 1.5rem;
-  font-family: "Advent Pro", sans-serif;
-  font-size: 1rem;
-  color: #ec8fdd;
-  padding: 1rem;
-  border-left: 4px solid #ec8fdd;
-  background-color: rgba(236, 143, 221, 0.1);
-}
-
-/* Responsive styling */
-@media (max-width: 600px) {
-  .verse-analyzer-container {
-    padding: 1rem;
-  }
-
-  textarea {
-    font-size: 0.9rem;
-  }
-
-  app-verse-result {
-    font-size: 0.9rem;
-  }
-}
-
-/* Table Styling */
 .verse-result-table {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 1.5rem;
-  background-color: #282828;
-  color: #f0f0f0;
+  background-color: var(--surface-color);
+  color: var(--text-color);
+  border-radius: 8px;
+  overflow: hidden; /* Ensures the border-radius is respected by child elements */
 }
 
-.verse-result-table th,
-.verse-result-table td {
-  border: 1px solid #444444;
-  padding: 10px;
-  text-align: center;
-}
-
-.verse-result-table th {
+.mat-mdc-header-cell {
   background: linear-gradient(145deg, #6c115a, #7d1376);
-  color: #ffffff;
+  color: white;
   font-weight: 600;
 }
 
-/* Pattern oszlop rugalmassága */
-.verse-result-table th.pattern,
-.verse-result-table td.pattern {
-  width: auto;
-  /* Engedi a rugalmasságot */
-  white-space: nowrap;
-  /* Megakadályozza a sortörést a pattern oszlopban */
+.mat-mdc-cell {
+  border-bottom-color: var(--border-color);
+  border-top-color: var(--border-color);
+  color: var(--text-color);
 }
 
-.verse-result-table td {
-  transition: background 0.3s;
+.mat-mdc-row:hover .mat-mdc-cell {
+  background-color: var(--surface-hover);
+  color: var(--secondary-color);
 }
 
-.verse-result-table tr:nth-child(even) {
-  background-color: #323232;
+.verse-text-cell {
+  white-space: pre-wrap;
+  word-break: break-word;
+  text-align: left;
 }
 
-.verse-result-table tr:hover td {
-  background-color: #3f3f3f;
-  color: #ec8fdd;
+/* --- Responsive Styling --- */
+@media (max-width: 600px) {
+  .verse-analyzer-container {
+    padding: 1rem;
+    margin: 1rem;
+  }
+  mat-card-title {
+    font-size: 1.5rem;
+  }
 }

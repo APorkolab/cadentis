@@ -1,0 +1,46 @@
+:host {
+  --primary-color: #5a33db;
+  --secondary-color: #ec8fdd;
+  --text-color: #f0f0f0;
+}
+
+mat-card {
+  width: 100%;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+mat-card-title {
+  font-family: "Advent Pro", sans-serif;
+  font-size: 1.8rem;
+  color: var(--secondary-color);
+  text-shadow: 0 0 4px var(--secondary-color);
+}
+
+mat-card-subtitle {
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.syllable-input {
+  width: 100%;
+}
+
+.results {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: rgba(236, 143, 221, 0.1);
+  border-left: 4px solid var(--secondary-color);
+  border-radius: 4px;
+}
+
+.results p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.results p strong {
+  color: var(--secondary-color);
+  font-weight: 600;
+}
