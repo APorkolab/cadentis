@@ -3,31 +3,58 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main # Or your default branch
+      - main
 
 permissions:
   contents: write
-  
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Node.js
+      - name: Set up Node.js (LTS)
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Build
-        run: ./node_modules/.bin/ng build --configuration production --base-href /cadentis/
+      - name: Build Angular app
+        shell: bash
+        run: |
+          # App név kiolvasása az angular.json-ból
+          APP=$(node -e "const a=require('./angular.json'); console.log(Object.keys(a.projects)[0])")
+          echo "Detected Angular project: $APP"
+
+          # Build - projekt oldal: /cadentis/
+          npx ng build --configuration production \
+            --base-href "/cadentis/" \
+            --deploy-url "/cadentis/"
+
+          # Kimeneti mappa autodetekció (Angular 17/18: dist/<app>/browser)
+          if [ -d "dist/$APP/browser" ]; then
+            OUT_DIR="dist/$APP/browser"
+          else
+            OUT_DIR="dist/$APP"
+          fi
+          echo "OUT_DIR=$OUT_DIR" >> $GITHUB_ENV
+          ls -la "$OUT_DIR"
+          test -f "$OUT_DIR/index.html" || (echo "index.html not found in $OUT_DIR" && exit 1)
+
+      - name: Add SPA 404 fallback
+        run: cp "$OUT_DIR/index.html" "$OUT_DIR/404.html"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist/cadentis
+          publish_branch: gh-pages
+          publish_dir: ${{ env.OUT_DIR }}
+          force_orphan: true
