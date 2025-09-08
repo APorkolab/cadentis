@@ -15,6 +15,7 @@ import { metaReducers } from './store/app.state';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { cacheInterceptor } from './core/interceptors/cache.interceptor';
+import { securityInterceptor } from './core/interceptors/security-functional.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,6 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideHttpClient(
       withInterceptors([
+        securityInterceptor,
         httpErrorInterceptor,
         loadingInterceptor,
         cacheInterceptor

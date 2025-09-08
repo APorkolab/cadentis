@@ -24,7 +24,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/manifest.json",
+              "src/sw.js",
+              "src/offline.html",
+              "src/assets"
             ],
             "styles": [
               "@angular/material/prebuilt-themes/magenta-violet.css",
