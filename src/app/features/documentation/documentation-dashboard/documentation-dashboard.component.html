@@ -1,0 +1,921 @@
+<div class="documentation-dashboard">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">
+        <span class="icon">📚</span>
+        Documentation & DevOps Excellence
+      </h1>
+      <div class="header-stats">
+        <div class="stat-card">
+          <span class="stat-value">{{ documentationStats.total }}</span>
+          <span class="stat-label">Total Docs</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{ apiStats.total }}</span>
+          <span class="stat-label">API Endpoints</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{ cicdPipelines.length }}</span>
+          <span class="stat-label">CI/CD Pipelines</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="tab-navigation">
+    <button 
+      *ngFor="let tab of [
+        {key: 'overview', label: '📊 Overview', icon: '📊'},
+        {key: 'documentation', label: '📖 Documentation', icon: '📖'},
+        {key: 'api', label: '🔗 API Docs', icon: '🔗'},
+        {key: 'deployment', label: '🚀 Deployment', icon: '🚀'},
+        {key: 'devops', label: '⚙️ DevOps', icon: '⚙️'},
+        {key: 'cicd', label: '🔄 CI/CD', icon: '🔄'},
+        {key: 'architecture', label: '🏗️ Architecture', icon: '🏗️'},
+        {key: 'onboarding', label: '👥 Onboarding', icon: '👥'},
+        {key: 'tools', label: '🛠️ Tools', icon: '🛠️'}
+      ]"
+      class="tab-button"
+      [class.active]="activeTab === tab.key"
+      (click)="setActiveTab(tab.key)">
+      {{ tab.label }}
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p>Loading documentation data...</p>
+  </div>
+
+  <!-- Overview Tab -->
+  <div *ngIf="activeTab === 'overview'" class="tab-content">
+    <div class="overview-grid">
+      <!-- Documentation Summary -->
+      <div class="overview-card">
+        <h3>📖 Documentation Overview</h3>
+        <div class="overview-stats">
+          <div class="stat-row">
+            <span>Complete:</span>
+            <span class="stat-value complete">{{ documentationStats.complete }}</span>
+          </div>
+          <div class="stat-row">
+            <span>In Progress:</span>
+            <span class="stat-value in-progress">{{ documentationStats.inProgress }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Draft:</span>
+            <span class="stat-value draft">{{ documentationStats.draft }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Outdated:</span>
+            <span class="stat-value outdated">{{ documentationStats.outdated }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Summary -->
+      <div class="overview-card">
+        <h3>🔗 API Overview</h3>
+        <div class="overview-stats">
+          <div class="stat-row">
+            <span>Total Endpoints:</span>
+            <span class="stat-value">{{ apiStats.total }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Authenticated:</span>
+            <span class="stat-value">{{ apiStats.authenticated }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Deprecated:</span>
+            <span class="stat-value deprecated">{{ apiStats.deprecated }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DevOps Metrics -->
+      <div class="overview-card" *ngIf="devopsMetrics">
+        <h3>⚙️ DevOps Metrics</h3>
+        <div class="overview-stats">
+          <div class="stat-row">
+            <span>Lead Time:</span>
+            <span class="stat-value">{{ devopsMetrics.leadTime }}h</span>
+          </div>
+          <div class="stat-row">
+            <span>Deployment Frequency:</span>
+            <span class="stat-value">{{ devopsMetrics.deploymentFrequency.daily }}/day</span>
+          </div>
+          <div class="stat-row">
+            <span>Failure Rate:</span>
+            <span class="stat-value">{{ formatPercentage(devopsMetrics.changeFailureRate) }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Recovery Time:</span>
+            <span class="stat-value">{{ devopsMetrics.meanTimeToRecovery }}h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="overview-card">
+        <h3>🕐 Recent Activity</h3>
+        <div class="activity-list">
+          <div *ngFor="let doc of documentation.slice(0, 5)" class="activity-item">
+            <span class="activity-icon">📝</span>
+            <div class="activity-content">
+              <span class="activity-title">{{ doc.title }}</span>
+              <span class="activity-meta">Updated {{ formatDate(doc.lastUpdated) }}</span>
+            </div>
+            <span 
+              class="activity-status" 
+              [style.color]="getStatusColor(doc.status)">
+              {{ doc.status }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentation Tab -->
+  <div *ngIf="activeTab === 'documentation'" class="tab-content">
+    <div class="content-header">
+      <div class="search-filters">
+        <div class="search-box">
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery" 
+            (input)="onSearch()"
+            placeholder="Search documentation..."
+            class="search-input">
+          <span class="search-icon">🔍</span>
+        </div>
+        <select 
+          [(ngModel)]="selectedCategory" 
+          (change)="onCategoryFilter()"
+          class="category-filter">
+          <option *ngFor="let category of categories" [value]="category.value">
+            {{ category.label }}
+          </option>
+        </select>
+      </div>
+      <div class="content-actions">
+        <button class="action-btn primary" (click)="generateDocTemplate('guide')">
+          📝 New Guide Template
+        </button>
+        <button class="action-btn secondary" (click)="exportDocumentation()">
+          📥 Export All
+        </button>
+        <label class="action-btn secondary">
+          📁 Import
+          <input type="file" (change)="onFileImport($event)" accept=".json" style="display: none;">
+        </label>
+      </div>
+    </div>
+
+    <div class="documentation-grid">
+      <div 
+        *ngFor="let doc of filteredDocumentation" 
+        class="doc-card"
+        (click)="selectDoc(doc)">
+        <div class="doc-header">
+          <div class="doc-title">
+            <span class="priority-icon">{{ getPriorityIcon(doc.priority) }}</span>
+            {{ doc.title }}
+          </div>
+          <span 
+            class="doc-status" 
+            [style.background-color]="getStatusColor(doc.status)">
+            {{ doc.status }}
+          </span>
+        </div>
+        <div class="doc-meta">
+          <span class="doc-category">{{ doc.category }}</span>
+          <span class="doc-author">by {{ doc.author }}</span>
+          <span class="doc-date">{{ formatDate(doc.lastUpdated) }}</span>
+        </div>
+        <p class="doc-description">{{ doc.description }}</p>
+        <div class="doc-footer">
+          <div class="doc-tags">
+            <span *ngFor="let tag of doc.tags.slice(0, 3)" class="doc-tag">{{ tag }}</span>
+          </div>
+          <div class="doc-metrics">
+            <span 
+              class="difficulty-badge" 
+              [style.background-color]="getDifficultyColor(doc.difficulty)">
+              {{ doc.difficulty }}
+            </span>
+            <span class="read-time">{{ doc.readTime }}min read</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Documentation Tab -->
+  <div *ngIf="activeTab === 'api'" class="tab-content">
+    <div class="content-header">
+      <h2>🔗 API Documentation</h2>
+      <div class="content-actions">
+        <button 
+          class="action-btn primary"
+          [disabled]="isGenerating"
+          (click)="generateAPIDoc()">
+          <span *ngIf="isGenerating" class="spinner"></span>
+          {{ isGenerating ? 'Generating...' : '📋 Generate OpenAPI Spec' }}
+        </button>
+        <button class="action-btn secondary" (click)="generateDocTemplate('api')">
+          📝 API Template
+        </button>
+      </div>
+    </div>
+
+    <div class="api-grid">
+      <div 
+        *ngFor="let endpoint of apiEndpoints" 
+        class="api-card"
+        (click)="selectAPI(endpoint)">
+        <div class="api-header">
+          <span 
+            class="http-method" 
+            [style.background-color]="getMethodColor(endpoint.method)">
+            {{ endpoint.method }}
+          </span>
+          <span class="api-path">{{ endpoint.path }}</span>
+          <div class="api-badges">
+            <span *ngIf="endpoint.authentication" class="auth-badge">🔒 Auth</span>
+            <span *ngIf="endpoint.deprecated" class="deprecated-badge">⚠️ Deprecated</span>
+          </div>
+        </div>
+        <p class="api-description">{{ endpoint.description }}</p>
+        <div class="api-footer">
+          <div class="api-tags">
+            <span *ngFor="let tag of endpoint.tags.slice(0, 3)" class="api-tag">{{ tag }}</span>
+          </div>
+          <span class="api-version">v{{ endpoint.version }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deployment Tab -->
+  <div *ngIf="activeTab === 'deployment'" class="tab-content">
+    <div class="content-header">
+      <h2>🚀 Deployment Guides</h2>
+      <button class="action-btn secondary" (click)="generateDocTemplate('deployment')">
+        📝 Deployment Template
+      </button>
+    </div>
+
+    <div class="deployment-grid">
+      <div 
+        *ngFor="let guide of deploymentGuides" 
+        class="deployment-card"
+        (click)="selectDeployment(guide)">
+        <div class="deployment-header">
+          <div class="deployment-title">
+            <span class="env-icon">
+              {{ guide.environment === 'production' ? '🔴' : guide.environment === 'staging' ? '🟡' : '🟢' }}
+            </span>
+            {{ guide.title }}
+          </div>
+          <span class="complexity-badge" [attr.data-complexity]="guide.complexity">
+            {{ guide.complexity }}
+          </span>
+        </div>
+        <div class="deployment-meta">
+          <span class="deployment-platform">{{ guide.platform }}</span>
+          <span class="deployment-time">{{ formatDuration(guide.estimatedTime) }}</span>
+          <span class="deployment-steps">{{ guide.steps.length }} steps</span>
+        </div>
+        <div class="deployment-actions">
+          <button 
+            class="execute-btn"
+            (click)="executeDeployment(); $event.stopPropagation()">
+            ▶️ Execute
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DevOps Tab -->
+  <div *ngIf="activeTab === 'devops'" class="tab-content">
+    <div class="content-header">
+      <h2>⚙️ DevOps Metrics</h2>
+      <button class="action-btn primary" (click)="refreshMetrics()">
+        🔄 Refresh Metrics
+      </button>
+    </div>
+
+    <div *ngIf="devopsMetrics" class="devops-metrics">
+      <!-- DORA Metrics -->
+      <div class="metrics-section">
+        <h3>📈 DORA Metrics</h3>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">📦</span>
+              <span class="metric-title">Deployment Frequency</span>
+            </div>
+            <div class="metric-values">
+              <div class="metric-value">
+                <span class="value">{{ devopsMetrics.deploymentFrequency.daily }}</span>
+                <span class="unit">per day</span>
+              </div>
+              <div class="metric-value">
+                <span class="value">{{ devopsMetrics.deploymentFrequency.weekly }}</span>
+                <span class="unit">per week</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">⚡</span>
+              <span class="metric-title">Lead Time</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ devopsMetrics.leadTime }}</span>
+              <span class="unit">hours</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">❌</span>
+              <span class="metric-title">Change Failure Rate</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ formatPercentage(devopsMetrics.changeFailureRate) }}</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">🔧</span>
+              <span class="metric-title">Mean Time to Recovery</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ devopsMetrics.meanTimeToRecovery }}</span>
+              <span class="unit">hours</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Code Quality Metrics -->
+      <div class="metrics-section">
+        <h3>📊 Code Quality</h3>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">✅</span>
+              <span class="metric-title">Test Coverage</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ formatPercentage(devopsMetrics.codeQuality.coverage / 100) }}</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">📈</span>
+              <span class="metric-title">Maintainability Index</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ devopsMetrics.codeQuality.maintainabilityIndex.toFixed(1) }}</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">⚠️</span>
+              <span class="metric-title">Technical Debt</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ devopsMetrics.codeQuality.technicalDebt }}</span>
+              <span class="unit">hours</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Infrastructure Metrics -->
+      <div class="metrics-section">
+        <h3>🏗️ Infrastructure</h3>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">📊</span>
+              <span class="metric-title">Uptime</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ formatPercentage(devopsMetrics.infrastructure.uptime / 100) }}</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">⚡</span>
+              <span class="metric-title">Response Time</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ devopsMetrics.infrastructure.responseTime }}</span>
+              <span class="unit">ms</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">🚨</span>
+              <span class="metric-title">Error Rate</span>
+            </div>
+            <div class="metric-value-large">
+              <span class="value">{{ formatPercentage(devopsMetrics.infrastructure.errorRate) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CI/CD Tab -->
+  <div *ngIf="activeTab === 'cicd'" class="tab-content">
+    <div class="content-header">
+      <h2>🔄 CI/CD Pipelines</h2>
+    </div>
+
+    <div class="pipeline-grid">
+      <div 
+        *ngFor="let pipeline of cicdPipelines" 
+        class="pipeline-card"
+        (click)="selectPipeline(pipeline)">
+        <div class="pipeline-header">
+          <div class="pipeline-title">{{ pipeline.name }}</div>
+          <span 
+            class="pipeline-status" 
+            [style.background-color]="getStatusColor(pipeline.status)">
+            {{ pipeline.status }}
+          </span>
+        </div>
+        <p class="pipeline-description">{{ pipeline.description }}</p>
+        <div class="pipeline-meta">
+          <span class="pipeline-trigger">🔗 {{ pipeline.trigger }}</span>
+          <span class="pipeline-environment">🌍 {{ pipeline.environment }}</span>
+          <span class="pipeline-duration">⏱️ {{ formatDuration(pipeline.averageDuration) }}</span>
+          <span class="pipeline-success">✅ {{ formatPercentage(pipeline.successRate / 100) }}</span>
+        </div>
+        <div class="pipeline-actions">
+          <button 
+            class="run-btn"
+            [disabled]="isPipelineRunning"
+            (click)="runPipeline(); $event.stopPropagation()">
+            ▶️ Run Pipeline
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Architecture Tab -->
+  <div *ngIf="activeTab === 'architecture'" class="tab-content">
+    <div class="content-header">
+      <h2>🏗️ Architecture Documentation</h2>
+    </div>
+
+    <div class="architecture-grid">
+      <div *ngFor="let arch of architectures" class="architecture-card">
+        <div class="architecture-header">
+          <h3>{{ arch.name }}</h3>
+          <button 
+            class="generate-diagram-btn"
+            [disabled]="isGenerating"
+            (click)="generateArchitectureDiagram(arch.id)">
+            {{ isGenerating ? '⏳' : '📊' }} Generate Diagram
+          </button>
+        </div>
+        <p class="architecture-description">{{ arch.description }}</p>
+        
+        <div class="architecture-section">
+          <h4>🔧 Components</h4>
+          <div class="components-list">
+            <div *ngFor="let component of arch.components" class="component-item">
+              <div class="component-header">
+                <span class="component-name">{{ component.name }}</span>
+                <span class="component-type">{{ component.type }}</span>
+              </div>
+              <p class="component-description">{{ component.description }}</p>
+              <div class="component-tech">
+                <span *ngFor="let tech of component.technologies" class="tech-tag">{{ tech }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="architecture-section">
+          <h4>📐 Design Patterns</h4>
+          <div class="patterns-list">
+            <span *ngFor="let pattern of arch.patterns" class="pattern-tag">{{ pattern }}</span>
+          </div>
+        </div>
+
+        <div class="architecture-section">
+          <h4>💡 Principles</h4>
+          <div class="principles-list">
+            <span *ngFor="let principle of arch.principles" class="principle-tag">{{ principle }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding Tab -->
+  <div *ngIf="activeTab === 'onboarding'" class="tab-content">
+    <div class="content-header">
+      <h2>👥 Onboarding Guides</h2>
+    </div>
+
+    <div class="onboarding-grid">
+      <div *ngFor="let guide of onboardingGuides" class="onboarding-card">
+        <div class="onboarding-header">
+          <h3>{{ guide.title }}</h3>
+          <div class="onboarding-meta">
+            <span class="audience-badge">👤 {{ guide.targetAudience }}</span>
+            <span class="time-badge">⏱️ {{ guide.estimatedTime }}h</span>
+          </div>
+        </div>
+
+        <div class="prerequisites">
+          <h4>📋 Prerequisites</h4>
+          <ul>
+            <li *ngFor="let prereq of guide.prerequisites">{{ prereq }}</li>
+          </ul>
+        </div>
+
+        <div class="modules">
+          <h4>📚 Modules</h4>
+          <div *ngFor="let module of guide.modules" class="module-item">
+            <div class="module-header">
+              <span class="module-title">{{ module.title }}</span>
+              <span class="module-duration">{{ formatDuration(module.estimatedTime) }}</span>
+            </div>
+            <p class="module-description">{{ module.description }}</p>
+            <button 
+              class="track-progress-btn"
+              (click)="trackOnboardingProgress(guide.id, module.id)">
+              ✅ Mark Complete
+            </button>
+          </div>
+        </div>
+
+        <div class="resources">
+          <h4>🔗 Resources</h4>
+          <div *ngFor="let resource of guide.resources" class="resource-item">
+            <a [href]="resource.url" target="_blank" class="resource-link">
+              {{ resource.title }}
+            </a>
+            <span *ngIf="resource.required" class="required-badge">Required</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tools Tab -->
+  <div *ngIf="activeTab === 'tools'" class="tab-content">
+    <div class="content-header">
+      <h2>🛠️ Development Tools</h2>
+    </div>
+
+    <div class="tools-grid">
+      <!-- Code Generator -->
+      <div class="tool-card">
+        <h3>🏗️ Code Generator</h3>
+        <p>Generate Angular components, services, and modules</p>
+        
+        <div class="tool-form">
+          <select [(ngModel)]="selectedTemplateType" class="tool-select">
+            <option *ngFor="let type of codeTemplateTypes" [value]="type">{{ type }}</option>
+          </select>
+          <input 
+            type="text" 
+            [(ngModel)]="templateName" 
+            placeholder="Enter name..."
+            class="tool-input">
+          <button 
+            class="tool-btn"
+            [disabled]="!templateName.trim() || isGenerating"
+            (click)="generateCodeTemplate()">
+            {{ isGenerating ? '⏳ Generating...' : '🏗️ Generate' }}
+          </button>
+        </div>
+
+        <div *ngIf="generatedCode" class="generated-code">
+          <div class="code-header">
+            <span>Generated Code:</span>
+            <button class="copy-btn" (click)="copyToClipboard(generatedCode)">📋 Copy</button>
+          </div>
+          <pre class="code-block">{{ generatedCode }}</pre>
+        </div>
+      </div>
+
+      <!-- Documentation Templates -->
+      <div class="tool-card">
+        <h3>📝 Documentation Templates</h3>
+        <p>Generate standardized documentation templates</p>
+        
+        <div class="template-actions">
+          <button class="template-btn" (click)="generateDocTemplate('api')">
+            🔗 API Template
+          </button>
+          <button class="template-btn" (click)="generateDocTemplate('guide')">
+            📖 User Guide Template
+          </button>
+          <button class="template-btn" (click)="generateDocTemplate('deployment')">
+            🚀 Deployment Template
+          </button>
+        </div>
+      </div>
+
+      <!-- Export/Import Tools -->
+      <div class="tool-card">
+        <h3>📦 Export/Import</h3>
+        <p>Export and import documentation data</p>
+        
+        <div class="export-form">
+          <select [(ngModel)]="selectedExportFormat" class="tool-select">
+            <option *ngFor="let format of exportFormats" [value]="format">{{ format.toUpperCase() }}</option>
+          </select>
+          <button 
+            class="tool-btn"
+            [disabled]="isGenerating"
+            (click)="exportDocumentation()">
+            {{ isGenerating ? '⏳ Exporting...' : '📥 Export' }}
+          </button>
+        </div>
+
+        <div class="import-form">
+          <label class="import-label">
+            📁 Import JSON File
+            <input type="file" (change)="onFileImport($event)" accept=".json">
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentation Detail Modal -->
+  <div *ngIf="selectedDoc" class="modal-overlay" (click)="closeDocModal()">
+    <div class="modal-content doc-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ selectedDoc.title }}</h2>
+        <button class="close-btn" (click)="closeDocModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="doc-meta-info">
+          <div class="meta-item">
+            <strong>Category:</strong> {{ selectedDoc.category }}
+          </div>
+          <div class="meta-item">
+            <strong>Status:</strong> 
+            <select [(ngModel)]="selectedDoc.status" (change)="updateDocStatus(selectedDoc!.id, selectedDoc!.status)">
+              <option value="draft">Draft</option>
+              <option value="in-progress">In Progress</option>
+              <option value="complete">Complete</option>
+              <option value="outdated">Outdated</option>
+            </select>
+          </div>
+          <div class="meta-item">
+            <strong>Author:</strong> {{ selectedDoc.author }}
+          </div>
+          <div class="meta-item">
+            <strong>Last Updated:</strong> {{ formatDate(selectedDoc.lastUpdated) }}
+          </div>
+          <div class="meta-item">
+            <strong>Read Time:</strong> {{ selectedDoc.readTime }} minutes
+          </div>
+          <div class="meta-item">
+            <strong>Difficulty:</strong> {{ selectedDoc.difficulty }}
+          </div>
+        </div>
+        
+        <div class="doc-content">
+          <h3>Description</h3>
+          <p>{{ selectedDoc.description }}</p>
+          
+          <h3>Content</h3>
+          <pre class="content-preview">{{ selectedDoc.content }}</pre>
+          
+          <div *ngIf="selectedDoc.codeExamples.length > 0">
+            <h3>Code Examples</h3>
+            <div *ngFor="let example of selectedDoc.codeExamples" class="code-example">
+              <h4>{{ example.title }}</h4>
+              <p>{{ example.description }}</p>
+              <pre class="code-block">{{ example.code }}</pre>
+              <div *ngIf="example.explanation" class="code-explanation">
+                <strong>Explanation:</strong> {{ example.explanation }}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="doc-actions">
+          <button class="btn-edit">✏️ Edit</button>
+          <button class="btn-duplicate">📄 Duplicate</button>
+          <button class="btn-delete" (click)="deleteDoc(selectedDoc!.id)">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Detail Modal -->
+  <div *ngIf="selectedAPI" class="modal-overlay" (click)="closeAPIModal()">
+    <div class="modal-content api-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <span 
+            class="http-method-large" 
+            [style.background-color]="getMethodColor(selectedAPI.method)">
+            {{ selectedAPI.method }}
+          </span>
+          {{ selectedAPI.path }}
+        </h2>
+        <button class="close-btn" (click)="closeAPIModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="api-description">
+          <p>{{ selectedAPI.description }}</p>
+        </div>
+        
+        <div *ngIf="selectedAPI.parameters.length > 0" class="api-parameters">
+          <h3>Parameters</h3>
+          <table class="params-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let param of selectedAPI.parameters">
+                <td>{{ param.name }}</td>
+                <td>{{ param.type }}</td>
+                <td>{{ param.required ? 'Yes' : 'No' }}</td>
+                <td>{{ param.description }}</td>
+                <td>{{ param.example }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="api-responses">
+          <h3>Responses</h3>
+          <div *ngFor="let response of selectedAPI.responses" class="response-item">
+            <h4>{{ response.statusCode }} - {{ response.description }}</h4>
+            <pre class="response-example">{{ response.example | json }}</pre>
+          </div>
+        </div>
+        
+        <div *ngIf="selectedAPI.examples.length > 0" class="api-examples">
+          <h3>Examples</h3>
+          <div *ngFor="let example of selectedAPI.examples" class="example-item">
+            <h4>{{ example.title }}</h4>
+            <div class="request-example">
+              <h5>Request</h5>
+              <pre>{{ example.request.method }} {{ example.request.url }}</pre>
+            </div>
+            <div class="response-example">
+              <h5>Response ({{ example.response.statusCode }})</h5>
+              <pre>{{ example.response.body | json }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deployment Execution Modal -->
+  <div *ngIf="selectedDeployment" class="modal-overlay" (click)="closeDeploymentModal()">
+    <div class="modal-content deployment-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ selectedDeployment.title }}</h2>
+        <button class="close-btn" (click)="closeDeploymentModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="deployment-info">
+          <div class="info-grid">
+            <div class="info-item">
+              <strong>Environment:</strong> {{ selectedDeployment.environment }}
+            </div>
+            <div class="info-item">
+              <strong>Platform:</strong> {{ selectedDeployment.platform }}
+            </div>
+            <div class="info-item">
+              <strong>Estimated Time:</strong> {{ formatDuration(selectedDeployment.estimatedTime) }}
+            </div>
+            <div class="info-item">
+              <strong>Complexity:</strong> {{ selectedDeployment.complexity }}
+            </div>
+          </div>
+        </div>
+        
+        <div class="deployment-steps">
+          <h3>Deployment Steps</h3>
+          <div *ngFor="let step of selectedDeployment.steps; let i = index" class="step-item">
+            <div class="step-header">
+              <span class="step-number">{{ i + 1 }}</span>
+              <span class="step-title">{{ step.title }}</span>
+              <span *ngIf="step.critical" class="critical-badge">Critical</span>
+            </div>
+            <p class="step-description">{{ step.description }}</p>
+            <div *ngIf="step.command" class="step-command">
+              <code>{{ step.command }}</code>
+            </div>
+          </div>
+        </div>
+        
+        <div *ngIf="deploymentSteps.length > 0" class="execution-progress">
+          <h3>Execution Progress</h3>
+          <div *ngFor="let stepResult of deploymentSteps" class="progress-step">
+            <span class="step-status" [attr.data-status]="stepResult.status">
+              {{ stepResult.status === 'running' ? '🔄' : stepResult.status === 'completed' ? '✅' : '❌' }}
+            </span>
+            <span class="step-message">{{ stepResult.message }}</span>
+          </div>
+        </div>
+        
+        <div class="deployment-actions">
+          <button 
+            class="execute-deployment-btn"
+            [disabled]="isDeploying"
+            (click)="executeDeployment()">
+            {{ isDeploying ? '🔄 Executing...' : '🚀 Execute Deployment' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline Execution Modal -->
+  <div *ngIf="selectedPipeline" class="modal-overlay" (click)="closePipelineModal()">
+    <div class="modal-content pipeline-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ selectedPipeline.name }}</h2>
+        <button class="close-btn" (click)="closePipelineModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="pipeline-info">
+          <p>{{ selectedPipeline.description }}</p>
+          <div class="pipeline-meta">
+            <span>Trigger: {{ selectedPipeline.trigger }}</span>
+            <span>Environment: {{ selectedPipeline.environment }}</span>
+            <span>Success Rate: {{ formatPercentage(selectedPipeline.successRate / 100) }}</span>
+          </div>
+        </div>
+        
+        <div class="pipeline-stages">
+          <h3>Pipeline Stages</h3>
+          <div *ngFor="let stage of selectedPipeline.stages" class="stage-item">
+            <div class="stage-header">
+              <span class="stage-name">{{ stage.name }}</span>
+              <span class="stage-timeout">⏱️ {{ formatDuration(stage.timeout) }}</span>
+            </div>
+            <p class="stage-description">{{ stage.description }}</p>
+            <div class="stage-commands">
+              <code *ngFor="let command of stage.commands">{{ command }}</code>
+            </div>
+          </div>
+        </div>
+        
+        <div *ngIf="pipelineStages.length > 0" class="execution-progress">
+          <h3>Execution Progress</h3>
+          <div *ngFor="let stageResult of pipelineStages" class="progress-stage">
+            <span class="stage-status" [attr.data-status]="stageResult.status">
+              {{ stageResult.status === 'running' ? '🔄' : stageResult.status === 'success' ? '✅' : '❌' }}
+            </span>
+            <span class="stage-message">{{ stageResult.message }}</span>
+          </div>
+        </div>
+        
+        <div class="pipeline-actions">
+          <button 
+            class="run-pipeline-btn"
+            [disabled]="isPipelineRunning"
+            (click)="runPipeline()">
+            {{ isPipelineRunning ? '🔄 Running...' : '▶️ Run Pipeline' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -55,6 +55,12 @@ import { RouterModule } from '@angular/router';
           <p>Comprehensive analytics and monitoring for insights and performance tracking.</p>
           <button routerLink="/analytics" class="btn">View Analytics Dashboard</button>
         </div>
+        
+        <div class="feature-card">
+          <h3>📚 Documentation & DevOps</h3>
+          <p>Complete documentation system with API docs, deployment guides, CI/CD pipelines, and DevOps excellence practices.</p>
+          <button routerLink="/documentation" class="btn">View Documentation Dashboard</button>
+        </div>
       </div>
     </div>
   `,

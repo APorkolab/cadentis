@@ -16,6 +16,7 @@ import { RouterOutlet, RouterModule } from '@angular/router';
           <a routerLink="/testing" routerLinkActive="active">Testing</a>
           <a routerLink="/pwa" routerLinkActive="active">PWA</a>
           <a routerLink="/analytics" routerLinkActive="active">Analytics</a>
+          <a routerLink="/documentation" routerLinkActive="active">Docs & DevOps</a>
         </div>
       </div>
     </nav>
