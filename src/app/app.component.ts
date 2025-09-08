@@ -22,5 +22,5 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'cadentis';
+  title = 'Cadentis';
 }

@@ -1,3 +1,41 @@
+:host {
+  --primary-color: #5a33db;
+  --secondary-color: #ec8fdd;
+  --background-dark1: #0d0d0d;
+  --background-dark2: #1a1a1a;
+  --text-color: #f0f0f0;
+}
+
+.app-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--background-dark1) 0%, var(--background-dark2) 100%);
+  padding: 2rem 1rem;
+}
+
 h1 {
   text-align: center;
+  font-family: "Advent Pro", sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+  text-shadow: 0 0 10px rgba(236, 143, 221, 0.5);
+  margin-bottom: 2rem;
+  letter-spacing: 2px;
+}
+
+.components-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.5rem;
+  }
+  .app-container {
+    padding: 1rem 0.5rem;
+  }
 }

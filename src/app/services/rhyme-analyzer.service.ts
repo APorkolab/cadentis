@@ -7,7 +7,7 @@ export class RhymeAnalyzerService {
   private readonly vowelList = ['a', 'á', 'e', 'é', 'i', 'í', 'o', 'ó', 'ö', 'ő', 'u', 'ú', 'ü', 'ű'];
   private readonly alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-  private getNextRhymePattern(current: string, forceA: boolean = false): string {
+  private getNextRhymePattern(current: string, forceA = false): string {
     if (!current || forceA) return 'a';
 
     if (current.length === 1) {
@@ -48,15 +48,13 @@ export class RhymeAnalyzerService {
     }
 
     const patterns: string[] = [];
-    let isFirstPattern = true;
     for (const stanza of stanzas) {
-      const stanzaPattern = this.analyzeStanza(stanza, isFirstPattern);
+      const stanzaPattern = this.analyzeStanza(stanza);
       patterns.push(...stanzaPattern);
-      isFirstPattern = false;
     }
 
     // Először alakítsuk át x-szé a magányos rímeket
-    const processedPatterns = patterns.map((char, index) => {
+    const processedPatterns = patterns.map((char) => {
       const count = patterns.filter(p => p === char).length;
       return count > 1 ? char : 'x';
     });
@@ -86,7 +84,7 @@ export class RhymeAnalyzerService {
     return patterns.map(char => char === 'x' ? 'x' : letterMapping.get(char)!);
   }
 
-  private analyzeStanza(lines: string[], isFirstStanza: boolean = false): string[] {
+  private analyzeStanza(lines: string[]): string[] {
     const rhymePattern: string[] = [];
     let currentRhyme = '';
     const rhymeMap = new Map<string, string>();
@@ -142,7 +140,7 @@ export class RhymeAnalyzerService {
   }
 
   private extractRhymingPart(word: string): string {
-    const cleanWord = word.toLowerCase().replace(/[!?.(),{}'":;«»\-]/g, '');
+    const cleanWord = word.toLowerCase().replace(/[!?.(),{}'":;«»-]/g, '');
 
     const vowelPositions = Array.from(cleanWord).map((char, index) =>
       this.vowelList.includes(char) ? index : -1

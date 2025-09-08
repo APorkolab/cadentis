@@ -149,7 +149,7 @@ export class VerseFormService {
   private initializeComplexPatterns() {
     const allPatterns = this.collectAllPatterns();
     this.verseForms.forEach(formType => {
-      formType.ComplexForms.forEach((complexForm: any) => {
+      formType.ComplexForms.forEach((complexForm: { components: string[]; pattern?: string }) => {
         complexForm.pattern = this.assemblePattern(complexForm.components, allPatterns);
       });
     });
@@ -160,8 +160,11 @@ export class VerseFormService {
 
     this.verseForms.forEach(formType => {
       ["Verslábak", "Kolónok", "Sorfajták", "StrophesAndLines"].forEach((category) => {
-        (formType[category as keyof typeof formType] || []).forEach((item: any) => {
-          allPatterns.set(item.formName, item.pattern);
+        const items = formType[category as keyof typeof formType] || [];
+        items.forEach((item: any) => {
+          if (item.formName && item.pattern) {
+            allPatterns.set(item.formName, item.pattern);
+          }
         });
       });
     });

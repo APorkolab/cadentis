@@ -1,7 +1,45 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles and dark theme implementation */
+@import url('https://fonts.googleapis.com/css2?family=Advent+Pro:ital,wght@0,100..900;1,100..900&family=Oxanium:wght@200..800&display=swap');
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+:root {
+  --primary-color: #5a33db;
+  --secondary-color: #ec8fdd;
+  --background-dark1: #0d0d0d;
+  --background-dark2: #1a1a1a;
+  --text-color: #f0f0f0;
+  --surface-color: #232323;
+  --surface-hover: #3f3f3f;
+  --border-color: #444444;
+}
+
+html, body { 
+  height: 100%; 
+  background-color: var(--background-dark1);
+  color: var(--text-color);
+}
+
+body { 
+  margin: 0; 
+  font-family: "Oxanium", "Roboto", "Helvetica Neue", sans-serif;
+}
+
+/* Dark theme for Angular Material components */
+.mat-app-background {
+  background-color: var(--background-dark1) !important;
+}
+
+.mat-mdc-form-field {
+  --mdc-filled-text-field-container-color: var(--surface-color);
+  --mdc-filled-text-field-label-text-color: var(--text-color);
+  --mdc-filled-text-field-input-text-color: var(--text-color);
+  --mat-form-field-container-text-color: var(--text-color);
+}
+
+.mat-mdc-card {
+  --mdc-elevated-card-container-color: var(--surface-color);
+  --mat-card-subtitle-text-color: var(--text-color);
+  --mat-card-header-text-color: var(--text-color);
+}
 
 /* Custom Snackbar Styling for Global Error Handler */
 .error-snackbar {

@@ -7,7 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, tap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, tap } from 'rxjs/operators';
 import { fadeInAnimation } from '../../animations';
 
 @Component({
@@ -26,9 +26,9 @@ import { fadeInAnimation } from '../../animations';
   styleUrls: ['./syllable-counter.component.css']
 })
 export class SyllableCounterComponent implements OnInit, OnDestroy {
-  inputText: string = '';
-  totalSyllables: number = 0;
-  totalMoras: number = 0;
+  inputText = '';
+  totalSyllables = 0;
+  totalMoras = 0;
 
   private analysisSubject = new Subject<string>();
   private analysisSubscription!: Subscription;

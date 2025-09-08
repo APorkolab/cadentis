@@ -6,7 +6,7 @@ export class GlobalErrorHandler implements ErrorHandler {
 
   constructor(private injector: Injector) { }
 
-  handleError(error: any): void {
+  handleError(error: Error | unknown): void {
     const notificationService = this.injector.get(NotificationService);
     const errorMessage = 'An unexpected error occurred. Please try again.';
 

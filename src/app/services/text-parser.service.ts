@@ -22,7 +22,7 @@ export class TextParserService {
     const syllables = this.splitIntoSyllables(processedText);
     let pattern = '';
     let moraCount = 0;
-    const syllableCount = processedText.split('').filter(char => this.isVowel(char)).length;
+    const syllableCount = syllables.length; // Count actual syllables, not just vowels
 
     syllables.forEach((syllable, index) => {
       const vowels = this.extractVowels(syllable);
@@ -52,20 +52,42 @@ export class TextParserService {
   }
 
   private splitIntoSyllables(text: string): string[] {
-    const cleanText = text.replace(/[,.!?;:]/g, ''); // Írásjelek eltávolítása
+    const cleanText = text.replace(/[^a-záéíóőúűaeiouöü]/gi, ''); // Only keep letters
     const syllables: string[] = [];
     let currentSyllable = '';
 
     for (let i = 0; i < cleanText.length; i++) {
-      const char = cleanText[i];
+      const char = cleanText[i].toLowerCase();
+      currentSyllable += char;
 
       if (this.isVowel(char)) {
-        if (currentSyllable) {
+        // Check if this completes a syllable
+        const nextChar = i + 1 < cleanText.length ? cleanText[i + 1].toLowerCase() : null;
+        
+        if (!nextChar || this.isVowel(nextChar)) {
+          // End of text or next is vowel - complete syllable
           syllables.push(currentSyllable);
+          currentSyllable = '';
+        } else {
+          // Next is consonant - look ahead to decide where to split
+          let consonantCount = 0;
+          let j = i + 1;
+          while (j < cleanText.length && !this.isVowel(cleanText[j].toLowerCase())) {
+            consonantCount++;
+            j++;
+          }
+          
+          // If only one consonant or at end, keep it with current syllable
+          if (consonantCount <= 1 || j >= cleanText.length) {
+            continue; // Don't split yet
+          } else {
+            // Multiple consonants - split after first
+            currentSyllable += cleanText[i + 1];
+            syllables.push(currentSyllable);
+            currentSyllable = '';
+            i++; // Skip the consonant we just added
+          }
         }
-        currentSyllable = char;
-      } else {
-        currentSyllable += char;
       }
     }
 
@@ -73,7 +95,7 @@ export class TextParserService {
       syllables.push(currentSyllable);
     }
 
-    return syllables.filter(s => s.trim());
+    return syllables.filter(s => s && this.extractVowels(s).length > 0);
   }
 
   private containsDiphthong(syllable: string): boolean {
