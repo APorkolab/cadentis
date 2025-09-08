@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { VerseAnalyzerComponent } from './verse-analyzer.component';
 import { VerseAnalysisService } from '../../services/verse-analysis.service';
+import { WebWorkerManagerService } from '../../services/web-worker-manager.service';
+import { PerformanceMonitorService } from '../../services/performance-monitor.service';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { VerseLine } from '../../models/verse-line.model';
 import { of, delay } from 'rxjs';
@@ -32,12 +34,25 @@ describe('VerseAnalyzerComponent', () => {
   ];
 
   beforeEach(async () => {
-    const spy = jasmine.createSpyObj('VerseAnalysisService', ['analyze']);
+    const spy = jasmine.createSpyObj('VerseAnalysisService', ['analyze', 'getAnalysisStats', 'exportAnalysis', 'analysisProgress$']);
+    const webWorkerSpy = jasmine.createSpyObj('WebWorkerManagerService', ['getPerformanceMetrics']);
+    const perfSpy = jasmine.createSpyObj('PerformanceMonitorService', ['metrics$']);
+    
+    // Setup observables
+    Object.defineProperty(spy, 'analysisProgress$', {
+      value: of({ isAnalyzing: false, progress: 0, currentLine: 0, totalLines: 0 })
+    });
+    Object.defineProperty(perfSpy, 'metrics$', {
+      value: of({ memoryUsage: 1024, activeTasks: 0, completedTasks: 0, averageTaskTime: 0, processingRate: 100 })
+    });
+    webWorkerSpy.getPerformanceMetrics.and.returnValue(of({ activeTasks: 0, isWorkerAvailable: false, maxConcurrentTasks: 3 }));
 
     await TestBed.configureTestingModule({
       imports: [VerseAnalyzerComponent, NoopAnimationsModule],
       providers: [
-        { provide: VerseAnalysisService, useValue: spy }
+        { provide: VerseAnalysisService, useValue: spy },
+        { provide: WebWorkerManagerService, useValue: webWorkerSpy },
+        { provide: PerformanceMonitorService, useValue: perfSpy }
       ]
     })
     .compileComponents();
@@ -55,6 +70,14 @@ describe('VerseAnalyzerComponent', () => {
 
   it('should call the analysis service after user types with a debounce', fakeAsync(async () => {
     verseAnalysisServiceSpy.analyze.and.returnValue(of(mockVerseLines));
+    verseAnalysisServiceSpy.getAnalysisStats.and.returnValue({
+      totalLines: 1,
+      averageLineLength: 11,
+      meterVariety: 1,
+      rhymeComplexity: 1,
+      mostCommonMeter: '-U-',
+      estimatedComplexity: 1.5
+    });
     const inputText = 'Arma virumque cano';
 
     const textareaHarness = await loader.getHarness(MatInputHarness.with({ selector: 'textarea' }));
@@ -74,6 +97,10 @@ describe('VerseAnalyzerComponent', () => {
 
   it('should properly manage loading state', () => {
     verseAnalysisServiceSpy.analyze.and.returnValue(of(mockVerseLines));
+    verseAnalysisServiceSpy.getAnalysisStats.and.returnValue({
+      totalLines: 1, averageLineLength: 11, meterVariety: 1,
+      rhymeComplexity: 1, mostCommonMeter: '-U-', estimatedComplexity: 1.5
+    });
     
     // Initially not loading
     expect(component.isLoading).toBeFalse();
@@ -87,6 +114,10 @@ describe('VerseAnalyzerComponent', () => {
 
   it('should display the results table with correct data', fakeAsync(async () => {
     verseAnalysisServiceSpy.analyze.and.returnValue(of(mockVerseLines));
+    verseAnalysisServiceSpy.getAnalysisStats.and.returnValue({
+      totalLines: 1, averageLineLength: 11, meterVariety: 1,
+      rhymeComplexity: 1, mostCommonMeter: '-U-', estimatedComplexity: 1.5
+    });
 
     // Trigger analysis
     component.onInputChange('test');

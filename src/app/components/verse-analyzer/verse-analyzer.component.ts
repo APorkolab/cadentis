@@ -50,7 +50,7 @@ export class VerseAnalyzerComponent implements OnInit, OnDestroy {
   performanceMetrics: any = null;
   errorMessage = '';
   
-  displayedColumns: string[] = ['meterPattern', 'rhymeScheme', 'syllableCount', 'moraCount', 'verseType', 'text', 'lejtesirany', 'actions'];
+  displayedColumns: string[] = ['meterPattern', 'rhymeScheme', 'syllableCount', 'moraCount', 'verseType', 'text', 'lejtesirany'];
 
   private readonly verseAnalysisService = inject(VerseAnalysisService);
   private readonly webWorkerManager = inject(WebWorkerManagerService);

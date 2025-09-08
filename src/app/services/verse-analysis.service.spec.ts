@@ -31,7 +31,7 @@ describe('VerseAnalysisService', () => {
     const formSpy = jasmine.createSpyObj('VerseFormService', ['getVerseForms']);
     const workerSpy = jasmine.createSpyObj('WebWorkerManagerService', ['analyzeVerse', 'getPerformanceMetrics']);
     const cacheSpyObj = jasmine.createSpyObj('CacheService', ['get', 'set', 'generateCacheKey']);
-    const perfSpy = jasmine.createSpyObj('PerformanceMonitorService', ['startTask', 'completeTask']);
+    const perfSpy = jasmine.createSpyObj('PerformanceMonitorService', ['startTask', 'completeTask', 'metrics$']);
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
@@ -59,6 +59,11 @@ describe('VerseAnalysisService', () => {
     cacheSpy.set.and.returnValue(Promise.resolve());
     cacheSpy.generateCacheKey.and.returnValue('test-key');
     workerSpy.getPerformanceMetrics.and.returnValue(of({ activeTasks: 0, isWorkerAvailable: false, maxConcurrentTasks: 3 }));
+    
+    // Setup observable properties
+    Object.defineProperty(perfSpy, 'metrics$', {
+      value: of({ memoryUsage: 1024, activeTasks: 0, completedTasks: 0, averageTaskTime: 0, processingRate: 100 })
+    });
   });
 
   it('should be created', () => {
