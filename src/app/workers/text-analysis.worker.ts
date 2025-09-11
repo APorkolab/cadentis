@@ -153,63 +153,102 @@ class TextAnalysisWorker {
     let pattern = '';
     let moraCount = 0;
 
-    syllables.forEach((syllable, index) => {
+    syllables.forEach((syllable) => {
       const vowels = this.extractVowels(syllable);
       if (vowels.length === 0) return;
 
-      if (index === syllables.length - 1) {
-        pattern += '-';
-        moraCount += 2;
-      } else {
-        const isLong = this.isLongSyllable(syllable, vowels);
-        pattern += isLong ? '-' : 'U';
-        moraCount += isLong ? 2 : 1;
-      }
+      const isLong = this.isLongSyllable(syllable, vowels);
+      pattern += isLong ? '-' : 'U';
+      moraCount += isLong ? 2 : 1;
     });
 
     return { pattern, syllableCount: syllables.length, moraCount };
   }
 
   private splitIntoSyllables(text: string): string[] {
-    const cleanText = text.replace(/[^a-záéíóőúűaeiouöü]/gi, '');
-    const syllables: string[] = [];
-    let currentSyllable = '';
+    // Syllabify per word, preserving word boundaries to avoid merging consonants across words
+    const words = text.split(/\s+/).filter(Boolean);
+    const allSyllables: string[] = [];
 
-    for (let i = 0; i < cleanText.length; i++) {
-      const char = cleanText[i].toLowerCase();
-      currentSyllable += char;
+    for (const rawWord of words) {
+      const word = rawWord.replace(/[^a-záéíóőúűaeiouöü]/gi, '');
+      if (!word) continue;
 
-      if (this.isVowel(char)) {
-        const nextChar = i + 1 < cleanText.length ? cleanText[i + 1].toLowerCase() : null;
-        
-        if (!nextChar || this.isVowel(nextChar)) {
-          syllables.push(currentSyllable);
-          currentSyllable = '';
-        } else {
-          let consonantCount = 0;
-          let j = i + 1;
-          while (j < cleanText.length && !this.isVowel(cleanText[j].toLowerCase())) {
-            consonantCount++;
-            j++;
-          }
-          
-          if (consonantCount <= 1 || j >= cleanText.length) {
-            continue;
-          } else {
-            currentSyllable += cleanText[i + 1];
+      const syllables: string[] = [];
+      let currentSyllable = '';
+
+      for (let i = 0; i < word.length; i++) {
+        const char = word[i].toLowerCase();
+        currentSyllable += char;
+
+        if (this.isVowel(char)) {
+          const nextChar = i + 1 < word.length ? word[i + 1].toLowerCase() : null;
+
+          if (!nextChar || this.isVowel(nextChar)) {
             syllables.push(currentSyllable);
             currentSyllable = '';
-            i++;
+          } else {
+            // Look ahead within the same word to count consonants after the vowel
+            let consonantCount = 0;
+            let j = i + 1;
+            while (j < word.length && !this.isVowel(word[j].toLowerCase())) {
+              const twoCharUnit = word.slice(j, j + 2).toLowerCase();
+              const threeCharUnit = word.slice(j, j + 3).toLowerCase();
+              if (this.MULTI_LETTER_CONSONANTS.includes(threeCharUnit)) {
+                consonantCount++;
+                j += 3;
+              } else if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
+                consonantCount++;
+                j += 2;
+              } else {
+                consonantCount++;
+                j += 1;
+              }
+            }
+
+            if (consonantCount === 0) {
+              // No consonants after vowel - complete the syllable
+              syllables.push(currentSyllable);
+              currentSyllable = '';
+            } else if (j >= word.length) {
+              // End of word - keep all remaining consonants with current syllable
+              currentSyllable += word.slice(i + 1);
+              syllables.push(currentSyllable);
+              currentSyllable = '';
+              break;
+            } else if (consonantCount === 1) {
+              // Single consonant goes with the following vowel
+              syllables.push(currentSyllable);
+              currentSyllable = '';
+            } else {
+              // Multiple consonants: split after the first consonant unit
+              const nextTwo = word.slice(i + 1, i + 3).toLowerCase();
+              const nextThree = word.slice(i + 1, i + 4).toLowerCase();
+              if (this.MULTI_LETTER_CONSONANTS.includes(nextThree)) {
+                currentSyllable += word.slice(i + 1, i + 4);
+                i += 3;
+              } else if (this.MULTI_LETTER_CONSONANTS.includes(nextTwo)) {
+                currentSyllable += word.slice(i + 1, i + 3);
+                i += 2;
+              } else {
+                currentSyllable += word[i + 1];
+                i += 1;
+              }
+              syllables.push(currentSyllable);
+              currentSyllable = '';
+            }
           }
         }
       }
+
+      if (currentSyllable) {
+        syllables.push(currentSyllable);
+      }
+
+      allSyllables.push(...syllables);
     }
 
-    if (currentSyllable) {
-      syllables.push(currentSyllable);
-    }
-
-    return syllables.filter(s => s && this.extractVowels(s).length > 0);
+    return allSyllables.filter(s => s && this.extractVowels(s).length > 0);
   }
 
   private analyzeStressPattern(text: string): string {
