@@ -11,7 +11,7 @@ export class TextParserService {
   private readonly LONG_VOWELS = 'áéíóőúű';
   private readonly SHORT_VOWELS = 'aeiouöü';
   private readonly VOWELS = this.LONG_VOWELS + this.SHORT_VOWELS;
-  private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'ly'];
+  private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'dzs', 'ly'];
   private readonly DIPHTHONGS = ['ai', 'au', 'ei', 'eu', 'oi', 'ou', 'ui'];
   private readonly SPECIAL_CONSONANT_PAIRS = ['kh', 'ph', 'th'];
 

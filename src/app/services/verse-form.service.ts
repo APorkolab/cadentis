@@ -181,7 +181,15 @@ export class VerseFormService {
 
   private matchPattern(inputPattern: string, versePattern: string): boolean {
     // Az `inputPattern` és `versePattern` összevetése az '=' figyelembevételével
-    const regex = new RegExp(`^${versePattern.replace(/=/g, '(UU|-)').replace(/\?/g, '.')}$`);
+    // és a regex metakarakterek biztonságos kezelése.
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Először escape-eljük, majd visszacseréljük a használt helyettesítőinket
+    let patternEscaped = escapeRegex(versePattern);
+    patternEscaped = patternEscaped
+      .replace(/=/g, '(UU|-)') // '=': hosszú vagy két rövid
+      .replace(/\\\?/g, '.') // '?' (escaped by escapeRegex) -> tetszőleges egy jel
+      .replace(/\\\|/g, '\\|'); // '|' maradjon literal vagy alternáció? Ha alternációt szeretnénk, hagyjuk így.
+    const regex = new RegExp(`^${patternEscaped}$`);
     return regex.test(inputPattern);
   }
 
@@ -198,7 +206,15 @@ export class VerseFormService {
   }
 
   private calculateMoraCount(pattern: string): number {
-    const normalizedPattern = pattern.replace(/\?/g, '');
-    return normalizedPattern.split('').filter(char => /[U-]/.test(char)).length;
+    // Count moras by weighting: U = 1 mora, - = 2 moras. Ignore other symbols (e.g., |, /, =, ?).
+    const normalized = pattern.replace(/\s/g, '');
+    let moras = 0;
+    for (const ch of normalized) {
+      if (ch === 'U') moras += 1;
+      else if (ch === '-') moras += 2;
+      // '=' is handled when assembling complex patterns (turned into (UU|-)),
+      // so here we ignore it to avoid double-counting.
+    }
+    return moras;
   }
 }
