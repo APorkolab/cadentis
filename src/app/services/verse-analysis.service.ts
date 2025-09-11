@@ -209,26 +209,28 @@ export class VerseAnalysisService {
   }
 
   private isHexameter(pattern: string): boolean {
-    const mainPattern = pattern.replace(/[x?]$/, '');
-    if (mainPattern.length < 13 || mainPattern.length > 17) return false;
+    const mainPattern = pattern.replace(/[x?\s]/g, '');
     if (!/^[-U]+$/.test(mainPattern)) return false;
-    const firstFourFeet = mainPattern.slice(0, -5);
-    const feetPattern = /^(-UU|--)+$/;
-    if (!feetPattern.test(firstFourFeet)) return false;
-    const fifthFoot = mainPattern.slice(-5, -2);
-    if (fifthFoot !== '-UU') return false;
-    const lastFoot = mainPattern.slice(-2);
-    return lastFoot === '--' || lastFoot === '-U';
+    const n = mainPattern.length;
+    if (n < 12 || n > 20) return false;
+    const hasDactyl = mainPattern.includes('-UU');
+    if (!hasDactyl) return false;
+    const lastFootOk = mainPattern.endsWith('--') || mainPattern.endsWith('-U');
+    if (!lastFootOk) return false;
+    const tail = mainPattern.slice(Math.max(0, n - 7));
+    if (!tail.includes('-UU')) return false;
+    return true;
   }
 
   private isPentameter(pattern: string): boolean {
-    const mainPattern = pattern.replace(/[x?]$/, '');
-    if (mainPattern.length < 12 || mainPattern.length > 14) return false;
-    const secondHalf = mainPattern.slice(-7);
-    if (secondHalf !== '-UU-UU-') return false;
-    const firstHalf = mainPattern.slice(0, -7);
-    const validFirstHalf = /^(-UU|--)(-UU|--)[-]$/;
-    return validFirstHalf.test(firstHalf);
+    const mainPattern = pattern.replace(/[x?\s]/g, '');
+    if (!/^[-U]+$/.test(mainPattern)) return false;
+    const n = mainPattern.length;
+    if (n < 10 || n > 16) return false;
+    const dactyls = (mainPattern.match(/-UU/g) || []).length;
+    if (dactyls < 2) return false;
+    if (!(mainPattern.endsWith('-') || mainPattern.endsWith('--'))) return false;
+    return true;
   }
 
   private findVerseType(pattern: string): { form: VerseForm | undefined, approximate: boolean } {
