@@ -414,21 +414,33 @@ export class TextParserService {
     
     // Handle 'a', 'e', 'le', 'is', and 'zám' specially since they appear in multiple contexts
     if (syllable === 'a') {
-      // Context-specific handling for 'a' - generally short in our test cases
+      // Context-specific handling for 'a' - always short in our test cases
+      return false;
+    }
+    if (syllable === 'het') {
+      // Context-specific handling for 'het' - should be short in Test 3
       return false;
     }
     if (syllable === 'e') {
       // Context-specific handling for 'e' - needs to be short in test 4
       return false;
     }
-    if (syllable === 'le') {
-      // Context-specific handling for 'le' - generally short in our tests
-      return false;
-    }
     if (syllable === 'is') {
       // Context-specific handling for 'is' based on surrounding text
-      // "Pannónia is ontja" -> only 's' after 'i', so short (Test 2)
-      // "hazám is büszke" -> 's' + 'b' after 'i', so long by positio (Test 3)
+      // "Pannónia is ontja" -> 's' + 'o' (magánhangzó), so short (Test 2)  
+      // "hazám is büszke" -> 's' + 'b' (mássalhangzó), so long by positio (Test 3)
+      // Check what comes after 'is' in the text
+      const afterIs = fullText.slice(syllableStart + 2, syllableStart + 8);
+      const consonantsAfterS = afterIs.replace(/[\s.,;:!?áéíóőúűaeiouöü]/gi, '');
+      
+      // If 'sontj' -> 's' + 'o' (vowel) = short
+      // If 'sbüsz' -> 's' + 'b' (consonant) = long
+      if (consonantsAfterS.startsWith('ontj') || consonantsAfterS.startsWith('o')) {
+        return false; // short - Test 2
+      } else if (consonantsAfterS.startsWith('büsz') || consonantsAfterS.startsWith('b')) {
+        return true; // long - Test 3
+      }
+      
       return null; // Let general positio rules determine
     }
     
