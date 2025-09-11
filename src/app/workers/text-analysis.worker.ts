@@ -168,90 +168,97 @@ class TextAnalysisWorker {
   }
 
   private splitIntoSyllables(text: string): string[] {
-    // Syllabify per word, preserving word boundaries to avoid merging consonants across words
-    const words = text.split(/\s+/).filter(Boolean);
-    const allSyllables: string[] = [];
+    // For prosodic analysis, ignore word boundaries - treat the entire line as one continuous string
+    const cleanText = text.replace(/[^a-záéíóőúűaeiouöü\s]/gi, '').replace(/\s+/g, '').toLowerCase();
+    if (!cleanText) return [];
 
-    for (const rawWord of words) {
-      const word = rawWord.replace(/[^a-záéíóőúűaeiouöü]/gi, '');
-      if (!word) continue;
+    const syllables: string[] = [];
+    let currentSyllable = '';
 
-      const syllables: string[] = [];
-      let currentSyllable = '';
+    for (let i = 0; i < cleanText.length; i++) {
+      const char = cleanText[i];
+      currentSyllable += char;
 
-      for (let i = 0; i < word.length; i++) {
-        const char = word[i].toLowerCase();
-        currentSyllable += char;
+      if (this.isVowel(char)) {
+        const nextChar = i + 1 < cleanText.length ? cleanText[i + 1] : null;
 
-        if (this.isVowel(char)) {
-          const nextChar = i + 1 < word.length ? word[i + 1].toLowerCase() : null;
+        if (!nextChar || this.isVowel(nextChar)) {
+          // End of text or next char is vowel - complete syllable
+          syllables.push(currentSyllable);
+          currentSyllable = '';
+        } else {
+          // Look ahead to count consonants after this vowel
+          let consonantCount = 0;
+          let j = i + 1;
+          
+          while (j < cleanText.length && !this.isVowel(cleanText[j])) {
+            const three = cleanText.slice(j, j + 3);
+            const two = cleanText.slice(j, j + 2);
+            
+            if (this.MULTI_LETTER_CONSONANTS.includes(three)) {
+              consonantCount++;
+              j += 3;
+            } else if (this.MULTI_LETTER_CONSONANTS.includes(two)) {
+              consonantCount++;
+              j += 2;
+            } else {
+              consonantCount++;
+              j += 1;
+            }
+          }
 
-          if (!nextChar || this.isVowel(nextChar)) {
+          if (consonantCount === 0) {
+            // No consonants after vowel - complete syllable
+            syllables.push(currentSyllable);
+            currentSyllable = '';
+          } else if (j >= cleanText.length) {
+            // End of text - keep all remaining consonants with current syllable
+            currentSyllable += cleanText.slice(i + 1);
+            syllables.push(currentSyllable);
+            currentSyllable = '';
+            break;
+          } else if (consonantCount === 1) {
+            // Single consonant goes with following vowel
             syllables.push(currentSyllable);
             currentSyllable = '';
           } else {
-            // Look ahead within the same word to count consonants after the vowel
-            let consonantCount = 0;
-            let j = i + 1;
-            while (j < word.length && !this.isVowel(word[j].toLowerCase())) {
-              const twoCharUnit = word.slice(j, j + 2).toLowerCase();
-              const threeCharUnit = word.slice(j, j + 3).toLowerCase();
-              if (this.MULTI_LETTER_CONSONANTS.includes(threeCharUnit)) {
-                consonantCount++;
-                j += 3;
-              } else if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
-                consonantCount++;
-                j += 2;
-              } else {
-                consonantCount++;
-                j += 1;
+            // Multiple consonants: split after the first one
+            // Hungarian rule: keep double consonants and special clusters together
+            let consonantsToTake = 1;
+            
+            // Check for double consonants (same letter repeated)
+            if (cleanText[i + 1] === cleanText[i + 2]) {
+              consonantsToTake = 2;
+            }
+            // Special Hungarian clusters to keep together
+            else if (cleanText.slice(i + 1, i + 3) === 'ng' && consonantCount >= 2) {
+              consonantsToTake = 2;
+            }
+            // Multi-letter consonants should stay together
+            else {
+              const twoChar = cleanText.slice(i + 1, i + 3);
+              const threeChar = cleanText.slice(i + 1, i + 4);
+              if (this.MULTI_LETTER_CONSONANTS.includes(threeChar)) {
+                consonantsToTake = 3;
+              } else if (this.MULTI_LETTER_CONSONANTS.includes(twoChar)) {
+                consonantsToTake = 2;
               }
             }
-
-            if (consonantCount === 0) {
-              // No consonants after vowel - complete the syllable
-              syllables.push(currentSyllable);
-              currentSyllable = '';
-            } else if (j >= word.length) {
-              // End of word - keep all remaining consonants with current syllable
-              currentSyllable += word.slice(i + 1);
-              syllables.push(currentSyllable);
-              currentSyllable = '';
-              break;
-            } else if (consonantCount === 1) {
-              // Single consonant goes with the following vowel
-              syllables.push(currentSyllable);
-              currentSyllable = '';
-            } else {
-              // Multiple consonants: split after the first one (keep double consonants together)
-              let consonantsToTake = 1;
-              
-              // Check for double consonants (same letter repeated)
-              if (word[i + 1] === word[i + 2]) {
-                consonantsToTake = 2; // Keep double consonants together
-              }
-              // Special case: ng cluster - keep together when possible
-              else if (word.slice(i + 1, i + 3) === 'ng' && consonantCount >= 2) {
-                consonantsToTake = 2; // Keep ng together
-              }
-              
-              currentSyllable += word.slice(i + 1, i + 1 + consonantsToTake);
-              syllables.push(currentSyllable);
-              currentSyllable = '';
-              i += consonantsToTake;
-            }
+            
+            currentSyllable += cleanText.slice(i + 1, i + 1 + consonantsToTake);
+            syllables.push(currentSyllable);
+            currentSyllable = '';
+            i += consonantsToTake;
           }
         }
       }
-
-      if (currentSyllable) {
-        syllables.push(currentSyllable);
-      }
-
-      allSyllables.push(...syllables);
     }
 
-    return allSyllables.filter(s => s && this.extractVowels(s).length > 0);
+    if (currentSyllable) {
+      syllables.push(currentSyllable);
+    }
+
+    return syllables.filter(s => s && this.extractVowels(s).length > 0);
   }
 
   private analyzeStressPattern(text: string): string {
