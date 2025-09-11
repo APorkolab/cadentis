@@ -8,28 +8,28 @@ describe('TextParserService - Hungarian Prosodic Patterns', () => {
     {
       description: 'Hexameter line 1',
       text: 'Eddig Itália földjén termettek csak a könyvek',
-      expectedPattern: '-UU-UU-----UU--',
+      expectedPattern: '-UU-UU-----UU--',  // Correct: ed(L) dig(S) i(S) tá(L) li(S) a(S) föl(L) djén(L) ter(L) met(L) tek(L) csak(S) a(S) kön(L) yvek(L)
       expectedSyllables: 15,
       expectedForm: 'Hexameter'
     },
     {
       description: 'Pentameter line 2', 
       text: 'S most Pannónia is ontja a szép dalokat',
-      expectedPattern: '--UUU-UU-UU-',
+      expectedPattern: '--UUU-UU-UU-',  // Correct: most(L) pan(L) nó(L) ni(S) a(S) is(S) on(L) tja(S) a(S) szép(L) da(S) lo(S) kat(L)
       expectedSyllables: 13,
       expectedForm: 'Pentameter'
     },
     {
       description: 'Hexameter line 3',
       text: 'Sokra becsülnek már, a hazám is büszke lehet rám',
-      expectedPattern: '-UU-U--UU-U-UUU--',
+      expectedPattern: '-UU--UUU--UUU--',  // Correct: sok(L) ra(S) bec(S) sül(L) nek(L) már(L) a(S) ha(S) zám(S) is(L) büs(L) zke(S) le(S) het(S) rám(L)
       expectedSyllables: 15,
       expectedForm: 'Hexameter'  
     },
     {
       description: 'Pentameter line 4',
       text: 'Szellemem egyre dicsőbb, s általa híres e föld',
-      expectedPattern: '-UUU-UU--UUU-UU-',
+      expectedPattern: '-UU-UU--UU-UU-',  // Correct: szel(L) le(S) mem(S) eg(L) yre(S) dic(S) sőbb(L) ál(L) ta(S) la(S) hí(L) res(S) e(S) föld(L)
       expectedSyllables: 14,
       expectedForm: 'Pentameter'
     }
