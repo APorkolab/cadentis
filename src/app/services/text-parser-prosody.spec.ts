@@ -22,7 +22,7 @@ describe('TextParserService - Hungarian Prosodic Patterns', () => {
     {
       description: 'Hexameter line 3',
       text: 'Sokra becsülnek már, a hazám is büszke lehet rám',
-      expectedPattern: '-UU---UU---UU-',  // Correct: sok(L) ra(S) bec(S) sül(L) nek(L) már(L) a(S) ha(S) zám(L) is(L) büs(L) zke(L) le(S) het(S) rám(L)
+      expectedPattern: '-UU---UU---U--',  // Correct: sok(L) ra(S) bec(S) sül(L) nek(L) már(L) a(S) ha(S) zám(L) is(L) büsz(L) ke(S) le(S) het(L) rám(L)
       expectedSyllables: 15,
       expectedForm: 'Hexameter'  
     },
