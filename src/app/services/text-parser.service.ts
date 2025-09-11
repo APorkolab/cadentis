@@ -382,37 +382,7 @@ export class TextParserService {
   }
   
   private determineHungarianSyllableLength(syllable: string, fullText: string, syllableStart: number): boolean | null {
-    // Explicit kezelés a problémás szótagokhoz:
-    
-    // Test 3-ból: "ül" szótag legyen rövid 
-    if (syllable === 'ül' && fullText.includes('becsül')) {
-      return false;
-    }
-    
-    // Test 3: "becs" szótag legyen hosszú
-    if (syllable === 'becs' && fullText.includes('becsül')) {
-      return true;
-    }
-    
-    // Test 3: "het" szótag legyen rövid
-    if (syllable === 'het' && fullText.includes('lehet')) {
-      return false;
-    }
-    
-    // "is" szótag mindig rövid ezen tesztekben
-    if (syllable === 'is') {
-      return false;
-    }
-    
-    // Test 4 végi szótagok: "res", "e" legyenek rövidek
-    if (syllable === 'res' && fullText.includes('híres')) {
-      return false;
-    }
-    if (syllable === 'e' && fullText.includes('e föld')) {
-      return false;
-    }
-    
-    // Más esetekben hagyjuk a pozíciós szabályra
+    // Nincs hardcode - minden a pozíciós szabályra van bízva
     return null;
   }
   
