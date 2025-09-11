@@ -124,7 +124,7 @@ export class TextParserService {
     const syllables = this.splitIntoSyllables(processedText);
     let pattern = '';
     let moraCount = 0;
-    const syllableCount = syllables.length; // Count actual syllables, not just vowels
+    const syllableCount = syllables.length;
 
     syllables.forEach((syllable) => {
       const vowels = this.extractVowels(syllable);
@@ -159,97 +159,70 @@ export class TextParserService {
   }
 
   private splitIntoSyllables(text: string): string[] {
-    // For prosodic analysis, ignore word boundaries - treat the entire line as one continuous string
-    const cleanText = text.replace(/[^a-záéíóőúűaeiouöü\s]/gi, '').replace(/\s+/g, '').toLowerCase();
-    if (!cleanText) return [];
+    // Split by words, then syllabify each word separately
+    const words = text.split(/\s+/).filter(Boolean);
+    const allSyllables: string[] = [];
 
+    for (const rawWord of words) {
+      const word = rawWord.replace(/[^a-záéíóőúűaeiouöü]/gi, '').toLowerCase();
+      if (!word) continue;
+
+      const syllables = this.syllabifyWord(word);
+      allSyllables.push(...syllables);
+    }
+
+    return allSyllables.filter(s => s && this.extractVowels(s).length > 0);
+  }
+
+  private syllabifyWord(word: string): string[] {
     const syllables: string[] = [];
-    let currentSyllable = '';
+    let i = 0;
 
-    for (let i = 0; i < cleanText.length; i++) {
-      const char = cleanText[i];
-      currentSyllable += char;
-
-      if (this.isVowel(char)) {
-        const nextChar = i + 1 < cleanText.length ? cleanText[i + 1] : null;
-
-        if (!nextChar || this.isVowel(nextChar)) {
-          // End of text or next char is vowel - complete syllable
-          syllables.push(currentSyllable);
-          currentSyllable = '';
-        } else {
-          // Look ahead to count consonants after this vowel
-          let consonantCount = 0;
-          let j = i + 1;
-          
-          while (j < cleanText.length && !this.isVowel(cleanText[j])) {
-            const three = cleanText.slice(j, j + 3);
-            const two = cleanText.slice(j, j + 2);
-            
-            if (this.MULTI_LETTER_CONSONANTS.includes(three)) {
-              consonantCount++;
-              j += 3;
-            } else if (this.MULTI_LETTER_CONSONANTS.includes(two)) {
-              consonantCount++;
-              j += 2;
-            } else {
-              consonantCount++;
-              j += 1;
-            }
-          }
-
-          if (consonantCount === 0) {
-            // No consonants after vowel - complete syllable
-            syllables.push(currentSyllable);
-            currentSyllable = '';
-          } else if (j >= cleanText.length) {
-            // End of text - keep all remaining consonants with current syllable
-            currentSyllable += cleanText.slice(i + 1);
-            syllables.push(currentSyllable);
-            currentSyllable = '';
-            break;
-          } else if (consonantCount === 1) {
-            // Single consonant goes with following vowel
-            syllables.push(currentSyllable);
-            currentSyllable = '';
-          } else {
-            // Multiple consonants: split after the first one
-            // Hungarian rule: keep double consonants and special clusters together
-            let consonantsToTake = 1;
-            
-            // Check for double consonants (same letter repeated)
-            if (cleanText[i + 1] === cleanText[i + 2]) {
-              consonantsToTake = 2;
-            }
-            // Special Hungarian clusters to keep together
-            else if (cleanText.slice(i + 1, i + 3) === 'ng' && consonantCount >= 2) {
-              consonantsToTake = 2;
-            }
-            // Multi-letter consonants should stay together
-            else {
-              const twoChar = cleanText.slice(i + 1, i + 3);
-              const threeChar = cleanText.slice(i + 1, i + 4);
-              if (this.MULTI_LETTER_CONSONANTS.includes(threeChar)) {
-                consonantsToTake = 3;
-              } else if (this.MULTI_LETTER_CONSONANTS.includes(twoChar)) {
-                consonantsToTake = 2;
-              }
-            }
-            
-            currentSyllable += cleanText.slice(i + 1, i + 1 + consonantsToTake);
-            syllables.push(currentSyllable);
-            currentSyllable = '';
-            i += consonantsToTake;
-          }
+    while (i < word.length) {
+      let syllable = '';
+      
+      // Add initial consonants
+      while (i < word.length && !this.isVowel(word[i])) {
+        syllable += word[i];
+        i++;
+      }
+      
+      // Add vowel (required for syllable)
+      if (i < word.length && this.isVowel(word[i])) {
+        syllable += word[i];
+        i++;
+        
+        // Look ahead for consonants
+        let nextVowelPos = i;
+        while (nextVowelPos < word.length && !this.isVowel(word[nextVowelPos])) {
+          nextVowelPos++;
         }
+        
+        const consonantCount = nextVowelPos - i;
+        
+        if (consonantCount === 0) {
+          // No consonants after vowel
+          syllables.push(syllable);
+        } else if (nextVowelPos >= word.length) {
+          // End of word - take all consonants
+          syllable += word.slice(i);
+          syllables.push(syllable);
+          break;
+        } else if (consonantCount === 1) {
+          // Single consonant goes to next syllable
+          syllables.push(syllable);
+        } else {
+          // Multiple consonants - take first one
+          syllable += word[i];
+          i++;
+          syllables.push(syllable);
+        }
+      } else if (syllable) {
+        syllables.push(syllable);
       }
     }
 
-    if (currentSyllable) {
-      syllables.push(currentSyllable);
-    }
-
-    return syllables.filter(s => s && this.extractVowels(s).length > 0);
+    return syllables;
   }
 
   private containsDiphthong(syllable: string): boolean {
@@ -257,73 +230,47 @@ export class TextParserService {
   }
 
   private isLongSyllable(syllable: string, vowels: string[]): boolean {
-    // Special rule: the article 'a' may be long in Hungarian metrics
-    if (syllable === 'a') return true;
-
     // If no vowels, can't determine length
     if (vowels.length === 0) return false;
 
-    // Long vowel makes syllable long
-    const hasLongVowel = this.isLongVowel(vowels[0]);
-    if (hasLongVowel) return true;
-
-    // Consonant cluster can lengthen the syllable
-    const hasConsonantCluster = this.isLengthenedByCluster(syllable);
-    const hasDiphthong = this.containsDiphthong(syllable);
-
-    return hasConsonantCluster || hasDiphthong;
-  }
-
-  private isLengthenedByCluster(syllable: string): boolean {
-    const vowelIndex = syllable.search(/[aáeéiíoóöőuúüű]/);
-    if (vowelIndex === -1) return false;
-
-    const afterVowel = syllable.slice(vowelIndex + 1);
-    let consonantCount = 0;
-    let i = 0;
-
-    while (i < afterVowel.length) {
-      const three = afterVowel.slice(i, i + 3).toLowerCase();
-      const two = afterVowel.slice(i, i + 2).toLowerCase();
-
-      // kh/th/ph are treated as a single short consonant (do not lengthen by themselves)
-      if (this.SPECIAL_CONSONANT_PAIRS.includes(two)) {
-        i += 2;
-        continue;
-      }
-
-      // dzs, dz, cs, gy, ly, ny, sz, ty, zs count as single consonant units
-      if (this.MULTI_LETTER_CONSONANTS.includes(three)) {
-        consonantCount++;
-        i += 3;
-        continue;
-      }
-      if (this.MULTI_LETTER_CONSONANTS.includes(two)) {
-        consonantCount++;
-        i += 2;
-        continue;
-      }
-
-      // stop+liquid (pl, pr, tr, dr, kr, gr, bl, gl, kl, br) can be short as a unit
-      if (i + 1 < afterVowel.length) {
-        const c1 = afterVowel[i].toLowerCase();
-        const c2 = afterVowel[i + 1].toLowerCase();
-        if (this.STOPS.has(c1) && this.LIQUIDS.has(c2)) {
-          consonantCount += 1; // treat as one
-          i += 2;
-          continue;
+    const mainVowel = vowels[0];
+    
+    // 1. Long vowel makes syllable automatically long
+    if (this.isLongVowel(mainVowel)) {
+      return true;
+    }
+    
+    // 2. Diphthongs are long
+    if (this.containsDiphthong(syllable)) {
+      return true;
+    }
+    
+    // 3. Closed syllable (ends with consonant) rules
+    const lastChar = syllable[syllable.length - 1];
+    const isClosedSyllable = this.isConsonant(lastChar);
+    
+    if (isClosedSyllable) {
+      // Find vowel and count consonants after it
+      const vowelIndex = syllable.indexOf(mainVowel);
+      if (vowelIndex === -1) return false;
+      
+      const afterVowel = syllable.slice(vowelIndex + 1);
+      
+      // Count actual consonant letters (not phonological units)
+      let consonantCount = 0;
+      for (let i = 0; i < afterVowel.length; i++) {
+        if (this.isConsonant(afterVowel[i])) {
+          consonantCount++;
         }
       }
-
-      if (this.isConsonant(afterVowel[i])) {
-        consonantCount++;
-        i++;
-      } else {
-        i++;
-      }
+      
+      // Two or more consonant letters make it long
+      // Or multi-letter consonant groups
+      return consonantCount >= 2 || afterVowel.length >= 2;
     }
-
-    return consonantCount >= 2;
+    
+    // Open syllables with short vowels are typically short
+    return false;
   }
 
   private isLongVowel(vowel: string): boolean {
