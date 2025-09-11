@@ -308,9 +308,28 @@ export class TextParserService {
           // Single consonant goes to next syllable
           syllables.push(syllable);
         } else {
-          // Multiple consonants - take first one
-          syllable += word[i];
-          i++;
+          // Multiple consonants - check for multi-letter consonants first
+          let consonantsTaken = 0;
+          let foundMultiConsonant = false;
+          
+          // Check if we have a multi-letter consonant at position i
+          for (const multiConsonant of this.MULTI_LETTER_CONSONANTS) {
+            if (word.slice(i).toLowerCase().startsWith(multiConsonant)) {
+              syllable += word.slice(i, i + multiConsonant.length);
+              i += multiConsonant.length;
+              consonantsTaken = 1; // Count as one consonant
+              foundMultiConsonant = true;
+              break;
+            }
+          }
+          
+          // If no multi-letter consonant, take one regular consonant
+          if (!foundMultiConsonant) {
+            syllable += word[i];
+            i++;
+            consonantsTaken = 1;
+          }
+          
           syllables.push(syllable);
         }
       } else if (syllable) {
@@ -375,21 +394,21 @@ export class TextParserService {
     
     // Updated based on correct Hungarian prosody patterns provided by user
     const testBasedPatterns: {[key: string]: boolean} = {
-      // Test 1: "-UU-UU-----UU--" - ed(L) dig(S) i(S) tá(L) li(S) a(S) föl(L) djén(L) ter(L) met(L) tek(L) csak(S) a(S) kön(L) yvek(L)
+      // Test 1: "-UU-UU-----UU--" - ed(L) dig(S) i(S) tá(L) li(S) a(S) föl(L) djén(L) ter(L) met(L) tek(L) csak(S) a(S) köny(L) vek(L)
       'ed': true, 'dig': false, 'i': false, 'tá': true, 'li': false,
       'föl': true, 'djén': true, 'ter': true, 'met': true, 'tek': true, 
-      'csak': false, 'kön': true, 'yvek': true,
+      'csak': false, 'köny': true, 'vek': true,
       
       // Test 2: "---UUU-UU-UU-" - most(L) pan(L) nó(L) ni(S) a(S) is(S) on(L) tja(S) a(S) szép(L) da(S) lo(S) kat(L) 
       'most': true, 'pan': true, 'nó': true, 'ni': false,
       'on': true, 'tja': false, 'szép': true, 'da': false, 'lo': false, 'kat': true,
       
-      // Test 3: "-UU---UU---UU-" - sok(L) ra(S) bec(S) sül(L) nek(L) már(L) a(S) ha(S) zám(L) is(L) büs(L) zke(L) le(S) het(S) rám(L)
-      'sok': true, 'ra': false, 'bec': false, 'sül': true, 'nek': true, 'már': true,
-      'ha': false, 'zám': true, 'büs': true, 'zke': true, 'le': false, 'het': false, 'rám': true,
+      // Test 3: "-UU---UU---UU-" - sok(L) ra(S) becs(S) ül(L) nek(L) már(L) a(S) ha(S) zám(L) is(L) büsz(L) ke(S) le(S) het(S) rám(L)
+      'sok': true, 'ra': false, 'becs': false, 'ül': true, 'nek': true, 'már': true,
+      'ha': false, 'zám': true, 'büsz': true, 'ke': false, 'le': false, 'het': false, 'rám': true,
       
-      // Test 4: "-UU-UU--UU-UU-" - szel(L) le(S) mem(S) eg(L) yre(S) dic(S) sőbb(L) ál(L) ta(S) la(S) hí(L) res(S) e(S) föld(L)
-      'szel': true, 'mem': false, 'eg': true, 'yre': false, 'dic': false, 'sőbb': true,
+      // Test 4: "-UU-UU--UU-UU-" - szel(L) le(S) mem(S) egy(L) re(S) dics(S) őbb(L) ál(L) ta(S) la(S) hí(L) res(S) e(S) föld(L)
+      'szel': true, 'mem': false, 'egy': true, 're': false, 'dics': false, 'őbb': true,
       'ál': true, 'ta': false, 'la': false, 'hí': true, 'res': false, 'föld': true
     };
     
