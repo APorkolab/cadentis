@@ -13,7 +13,7 @@ describe('SyllableCounterComponent', () => {
   let loader: HarnessLoader;
 
   beforeEach(async () => {
-    const spy = jasmine.createSpyObj('TextParserService', ['parseText']);
+    const spy = jasmine.createSpyObj('TextParserService', ['parseText', 'analyzeVerse']);
 
     await TestBed.configureTestingModule({
       imports: [SyllableCounterComponent, NoopAnimationsModule],
@@ -36,17 +36,17 @@ describe('SyllableCounterComponent', () => {
 
   it('should calculate total syllables and moras after user types', fakeAsync(async () => {
     const inputText = 'Hello world\nThis is a test';
-    const lines = inputText.split('\n');
 
-    // Setup the spy to return different values for each line
-    textParserServiceSpy.parseText.and.callFake((line: string) => {
-      if (line === lines[0]) {
-        return { pattern: '', syllableCount: 3, moraCount: 5 };
-      }
-      if (line === lines[1]) {
-        return { pattern: '', syllableCount: 4, moraCount: 6 };
-      }
-      return { pattern: '', syllableCount: 0, moraCount: 0 };
+    // Setup the spy to return verse analysis
+    textParserServiceSpy.analyzeVerse.and.returnValue({
+      lines: [
+        { pattern: 'U-U', syllableCount: 3, moraCount: 5, metricFeet: ['Jambus'], rhythm: 'Jambikus ritmus', verseForm: undefined },
+        { pattern: 'U-UU-', syllableCount: 4, moraCount: 6, metricFeet: ['Jambus', 'Daktylus'], rhythm: 'Vegyes ritmus', verseForm: undefined }
+      ],
+      totalSyllables: 7,
+      totalMoras: 11,
+      dominantRhythm: 'Vegyes ritmus',
+      possibleMeter: 'Vegyes versmérték'
     });
 
     const textareaHarness = await loader.getHarness(MatInputHarness.with({ selector: 'textarea' }));
@@ -56,19 +56,23 @@ describe('SyllableCounterComponent', () => {
     tick(300);
     fixture.detectChanges();
 
-    expect(textParserServiceSpy.parseText).toHaveBeenCalledTimes(2);
-    expect(textParserServiceSpy.parseText).toHaveBeenCalledWith(lines[0]);
-    expect(textParserServiceSpy.parseText).toHaveBeenCalledWith(lines[1]);
+    expect(textParserServiceSpy.analyzeVerse).toHaveBeenCalledWith(inputText);
 
-    // 3 + 4 = 7
     expect(component.totalSyllables).toBe(7);
-    // 5 + 6 = 11
     expect(component.totalMoras).toBe(11);
   }));
 
   it('should display the correct totals in the template', fakeAsync(async () => {
     const inputText = 'test input';
-    textParserServiceSpy.parseText.and.returnValue({ pattern: '', syllableCount: 5, moraCount: 8 });
+    textParserServiceSpy.analyzeVerse.and.returnValue({
+      lines: [
+        { pattern: 'U-UU-', syllableCount: 5, moraCount: 8, metricFeet: ['Jambus', 'Daktylus'], rhythm: 'Vegyes ritmus', verseForm: undefined }
+      ],
+      totalSyllables: 5,
+      totalMoras: 8,
+      dominantRhythm: 'Vegyes ritmus',
+      possibleMeter: 'Vegyes versmérték'
+    });
 
     const textareaHarness = await loader.getHarness(MatInputHarness.with({ selector: 'textarea' }));
     await textareaHarness.setValue(inputText);
@@ -79,8 +83,8 @@ describe('SyllableCounterComponent', () => {
     const resultsDiv = fixture.nativeElement.querySelector('.results');
     expect(resultsDiv).toBeTruthy();
 
-    const paragraphs = resultsDiv.querySelectorAll('p');
-    expect(paragraphs[0].textContent).toContain('Total Syllables: 5');
-    expect(paragraphs[1].textContent).toContain('Total Moras: 8');
+    const statCards = resultsDiv.querySelectorAll('.stat-card strong');
+    expect(statCards[0].textContent.trim()).toBe('5');
+    expect(statCards[1].textContent.trim()).toBe('8');
   }));
 });

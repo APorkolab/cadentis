@@ -6,6 +6,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { TextFieldModule } from '@angular/cdk/text-field';
+import { MatButtonModule } from '@angular/material/button';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatListModule } from '@angular/material/list';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, tap } from 'rxjs/operators';
 import { fadeInAnimation } from '../../animations';
@@ -20,7 +25,12 @@ import { fadeInAnimation } from '../../animations';
     MatFormFieldModule,
     MatInputModule,
     MatCardModule,
-    TextFieldModule
+    TextFieldModule,
+    MatButtonModule,
+    MatExpansionModule,
+    MatChipsModule,
+    MatDividerModule,
+    MatListModule
   ],
   templateUrl: './syllable-counter.component.html',
   styleUrls: ['./syllable-counter.component.css']
@@ -29,6 +39,8 @@ export class SyllableCounterComponent implements OnInit, OnDestroy {
   inputText = '';
   totalSyllables = 0;
   totalMoras = 0;
+  verseAnalysis: any = null;
+  showDetailedAnalysis = false;
 
   private analysisSubject = new Subject<string>();
   private analysisSubscription!: Subscription;
@@ -57,18 +69,17 @@ export class SyllableCounterComponent implements OnInit, OnDestroy {
     if (!text || text.trim() === '') {
       this.totalSyllables = 0;
       this.totalMoras = 0;
+      this.verseAnalysis = null;
       return;
     }
 
-    const lines = text.split('\n');
-    const totals = lines.reduce((acc, line) => {
-      const parsed = this.textParser.parseText(line);
-      acc.syllables += parsed.syllableCount;
-      acc.moras += parsed.moraCount;
-      return acc;
-    }, { syllables: 0, moras: 0 });
+    // Kibővített vers elemés
+    this.verseAnalysis = this.textParser.analyzeVerse(text);
+    this.totalSyllables = this.verseAnalysis.totalSyllables;
+    this.totalMoras = this.verseAnalysis.totalMoras;
+  }
 
-    this.totalSyllables = totals.syllables;
-    this.totalMoras = totals.moras;
+  toggleDetailedAnalysis(): void {
+    this.showDetailedAnalysis = !this.showDetailedAnalysis;
   }
 }

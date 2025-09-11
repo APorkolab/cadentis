@@ -42,9 +42,19 @@ export class VerseAnalysisService {
   public analysisProgress$ = this.analysisProgressSubject.asObservable();
 
   constructor() {
-    this.verseFormService.getVerseForms().subscribe(forms => {
-      this.verseForms = forms;
-    });
+    // Safe initialization - only subscribe if verseFormService exists
+    if (this.verseFormService && this.verseFormService.getVerseForms) {
+      this.verseFormService.getVerseForms().subscribe({
+        next: forms => {
+          this.verseForms = forms;
+        },
+        error: () => {
+          this.verseForms = []; // Fallback to empty array
+        }
+      });
+    } else {
+      this.verseForms = []; // Fallback if service not available
+    }
   }
 
   public analyze(text: string): Observable<VerseLine[]> {
@@ -160,7 +170,8 @@ export class VerseAnalysisService {
 
         // Rhyme analysis
         this.updateProgress(true, 70, 0, 0);
-        const { pattern: rhymePattern } = this.rhymeAnalyzer.analyzeRhyme(lines);
+        const rhymeResult = this.rhymeAnalyzer.analyzeRhyme(lines);
+        const rhymePattern = rhymeResult && Array.isArray(rhymeResult.pattern) ? rhymeResult.pattern : [];
 
         const finalResults = matchedLines.map((line, index) => {
           line.rhymeScheme = rhymePattern[index] || '';

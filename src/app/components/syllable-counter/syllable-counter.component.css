@@ -83,13 +83,183 @@ mat-card-subtitle {
   text-shadow: 0 0 2px rgba(236, 143, 221, 0.3);
 }
 
+/* Új stílusok a kibővített elemzéshez */
+.basic-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.stat-card {
+  flex: 1;
+  max-width: 150px;
+  padding: 1rem;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(90, 51, 219, 0.2), rgba(236, 143, 221, 0.1));
+  border: 1px solid rgba(90, 51, 219, 0.3);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(90, 51, 219, 0.3);
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 2rem;
+  color: var(--secondary-color);
+  text-shadow: 0 0 4px rgba(236, 143, 221, 0.4);
+  margin-bottom: 0.5rem;
+}
+
+.stat-card span {
+  color: var(--text-color);
+  opacity: 0.9;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.action-buttons {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.detailed-analysis {
+  margin-top: 1rem;
+  background: rgba(40, 40, 40, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.analysis-content {
+  padding: 1rem;
+}
+
+.general-info {
+  margin-bottom: 1rem;
+}
+
+.general-info p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.general-info strong {
+  color: var(--primary-color);
+}
+
+.line-analysis h4 {
+  color: var(--secondary-color);
+  margin: 1rem 0 0.5rem 0;
+  font-family: "Advent Pro", sans-serif;
+}
+
+.line-item {
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.5rem 0;
+}
+
+.line-item:last-child {
+  border-bottom: none;
+}
+
+.pattern {
+  font-family: 'Courier New', monospace;
+  background: rgba(90, 51, 219, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-left: 1rem;
+  font-size: 1.1rem;
+  color: var(--secondary-color);
+  text-shadow: 0 0 2px rgba(236, 143, 221, 0.3);
+}
+
+.verse-form {
+  color: var(--primary-color);
+  font-style: italic;
+}
+
+.rhythm-info {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.metric-feet {
+  margin-top: 0.5rem;
+}
+
+mat-chip-listbox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+mat-chip {
+  background: rgba(236, 143, 221, 0.2) !important;
+  color: var(--text-color) !important;
+  border: 1px solid rgba(236, 143, 221, 0.4) !important;
+  font-size: 0.8rem !important;
+  transition: all 0.3s ease;
+}
+
+mat-chip:hover {
+  background: rgba(236, 143, 221, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+mat-expansion-panel {
+  background: var(--surface-color) !important;
+  color: var(--text-color) !important;
+}
+
+mat-expansion-panel-header {
+  background: var(--surface-hover) !important;
+}
+
+mat-panel-title,
+mat-panel-description {
+  color: var(--text-color) !important;
+}
+
+mat-divider {
+  background-color: var(--border-color) !important;
+  margin: 1rem 0;
+}
+
+mat-list-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Responsive Styling */
 @media (max-width: 600px) {
   .syllable-counter-container {
     padding: 1rem;
     margin: 0.5rem;
   }
+  
   mat-card-title {
     font-size: 1.5rem;
+  }
+  
+  .basic-stats {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .stat-card {
+    max-width: 100%;
+  }
+  
+  .pattern {
+    display: block;
+    margin: 0.5rem 0;
+    text-align: center;
   }
 }

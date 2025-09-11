@@ -1,23 +1,84 @@
 <div class="syllable-counter-container">
   <mat-card>
     <mat-card-header>
-      <mat-card-title>Syllable & Mora Counter</mat-card-title>
-      <mat-card-subtitle>A simple tool to count syllables and moras in a text</mat-card-subtitle>
+      <mat-card-title>Magyar Prosódia Elemző</mat-card-title>
+      <mat-card-subtitle>Szótag, mora és metrikai elemzés magyar szövegekhez</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
       <mat-form-field appearance="fill" class="syllable-input">
-        <mat-label>Enter your text</mat-label>
+        <mat-label>Add meg a szöveget</mat-label>
         <textarea matInput
                   [(ngModel)]="inputText"
                   (ngModelChange)="onInputChange($event)"
                   cdkTextareaAutosize
                   cdkAutosizeMinRows="3"
                   cdkAutosizeMaxRows="10"
-                  placeholder="Paste your text here..."></textarea>
+                  placeholder="Másold ide a szöveget vagy írd be..."></textarea>
       </mat-form-field>
+      
+      <!-- Alapvető eredmények -->
       <div *ngIf="totalSyllables > 0" class="results" @fadeIn>
-        <p><strong>Total Syllables:</strong> {{ totalSyllables }}</p>
-        <p><strong>Total Moras:</strong> {{ totalMoras }}</p>
+        <div class="basic-stats">
+          <mat-card class="stat-card">
+            <strong>{{ totalSyllables }}</strong>
+            <span>Szótag</span>
+          </mat-card>
+          <mat-card class="stat-card">
+            <strong>{{ totalMoras }}</strong>
+            <span>Mora</span>
+          </mat-card>
+        </div>
+        
+        <!-- Részletes elemzés gomb -->
+        <div class="action-buttons">
+          <button mat-raised-button color="primary" (click)="toggleDetailedAnalysis()">
+            {{ showDetailedAnalysis ? 'Részletek elrejtése' : 'Részletes elemzés' }}
+          </button>
+        </div>
+        
+        <!-- Részletes elemzés -->
+        <mat-expansion-panel *ngIf="verseAnalysis && showDetailedAnalysis" class="detailed-analysis">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Metrikai Elemzés</mat-panel-title>
+            <mat-panel-description>{{ verseAnalysis.dominantRhythm }}</mat-panel-description>
+          </mat-expansion-panel-header>
+          
+          <div class="analysis-content">
+            <!-- Általános információk -->
+            <div class="general-info">
+              <p><strong>Domináns ritmus:</strong> {{ verseAnalysis.dominantRhythm }}</p>
+              <p><strong>Versmérték:</strong> {{ verseAnalysis.possibleMeter }}</p>
+              <p><strong>Összes sor:</strong> {{ verseAnalysis.lines.length }}</p>
+            </div>
+            
+            <mat-divider></mat-divider>
+            
+            <!-- Soronkénti elemzés -->
+            <div class="line-analysis">
+              <h4>Soronkénti elemzés:</h4>
+              <mat-list>
+                <mat-list-item *ngFor="let line of verseAnalysis.lines; let i = index" class="line-item">
+                  <div matListItemTitle>
+                    <strong>{{ i + 1 }}. sor</strong>
+                    <span class="pattern">{{ line.pattern }}</span>
+                  </div>
+                  <div matListItemLine>
+                    <span>{{ line.syllableCount }} szótag, {{ line.moraCount }} mora</span>
+                    <span *ngIf="line.verseForm" class="verse-form"> • {{ line.verseForm }}</span>
+                  </div>
+                  <div matListItemLine class="rhythm-info">
+                    {{ line.rhythm }}
+                  </div>
+                  <div *ngIf="line.metricFeet.length > 0" matListItemLine class="metric-feet">
+                    <mat-chip-listbox>
+                      <mat-chip *ngFor="let foot of line.metricFeet">{{ foot }}</mat-chip>
+                    </mat-chip-listbox>
+                  </div>
+                </mat-list-item>
+              </mat-list>
+            </div>
+          </div>
+        </mat-expansion-panel>
       </div>
     </mat-card-content>
   </mat-card>

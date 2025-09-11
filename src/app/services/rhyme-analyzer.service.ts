@@ -1,10 +1,39 @@
 import { Injectable } from '@angular/core';
 
+// Rím típusok enum
+export enum RhymeType {
+  CleanRhyme = 'Tiszta rím',
+  Assonance = 'Asszonánc', 
+  ConsonantRhyme = 'Mássalhangzós asszonánc',
+  CrookedRhyme = 'Kancsal rím',
+  GoatRhyme = 'Kecskerím',
+  TortureRhyme = 'Kínrím',
+  LineRhyme = 'Sorrím',
+  EchoRhyme = 'Visszhangrím',
+  TruncatedRhyme = 'Csonka rím',
+  MasculineRhyme = 'Hímrím',
+  FeminineRhyme = 'Nőrím',
+  NoRhyme = 'Rímtelen'
+}
+
+// Rímképlet típusok
+export enum RhymeScheme {
+  CrossRhyme = 'Keresztrím (ABAB)',
+  CoupletsRhyme = 'Páros rím (AABB)', 
+  EnclosedRhyme = 'Ölelkező rím (ABBA)',
+  ClusterRhyme = 'Bokorrím (AAAA)',
+  HalfRhyme = 'Félrím',
+  ReturningRhyme = 'Visszatérő rím',
+  ChainRhyme = 'Ráütő rím',
+  UnknownRhyme = 'Ismeretlen rímképlet'
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class RhymeAnalyzerService {
   private readonly vowelList = ['a', 'á', 'e', 'é', 'i', 'í', 'o', 'ó', 'ö', 'ő', 'u', 'ú', 'ü', 'ű'];
+  private readonly consonantList = ['b','c','d','f','g','h','j','k','l','m','n','p','q','r','s','t','v','w','x','y','z','cs','dz','dzs','gy','ly','ny','sz','ty','zs'];
   private readonly alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
   private getNextRhymePattern(current: string, forceA = false): string {
@@ -154,23 +183,212 @@ export class RhymeAnalyzerService {
 
   private isStrongRhyme(ending1: string, ending2: string): boolean {
     if (!ending1 || !ending2) return false;
-
-    const vowels1 = Array.from(ending1).filter(char => this.vowelList.includes(char));
-    const vowels2 = Array.from(ending2).filter(char => this.vowelList.includes(char));
-
-    if (vowels1.join('') !== vowels2.join('')) return false;
-
-    const lastVowelIdx1 = ending1.lastIndexOf(vowels1[vowels1.length - 1]);
-    const lastVowelIdx2 = ending2.lastIndexOf(vowels2[vowels2.length - 1]);
-
-    const consonants1 = ending1.slice(lastVowelIdx1 + 1);
-    const consonants2 = ending2.slice(lastVowelIdx2 + 1);
-
-    return consonants1 === consonants2 ||
-      (consonants1.length === consonants2.length &&
-        this.areConsonantsSimilar(consonants1, consonants2));
+    
+    // Teljes egyezés (tiszta rím vagy önrím)
+    if (ending1 === ending2) return true;
+    
+    const rhymeType = this.detectRhymeType(ending1, ending2);
+    return rhymeType !== RhymeType.NoRhyme;
+  }
+  
+  /**
+   * Magyar rímfajták felismerése
+   */
+  private detectRhymeType(ending1: string, ending2: string): RhymeType {
+    if (!ending1 || !ending2) return RhymeType.NoRhyme;
+    
+    // Teljes egyezés - tiszta rím
+    if (ending1 === ending2) return RhymeType.CleanRhyme;
+    
+    const vowels1 = this.extractVowels(ending1);
+    const vowels2 = this.extractVowels(ending2);
+    const consonants1 = this.extractConsonants(ending1);
+    const consonants2 = this.extractConsonants(ending2);
+    
+    // Kecskerím - mássalhangzók felcserélve
+    if (this.isGoatRhyme(ending1, ending2)) return RhymeType.GoatRhyme;
+    
+    // Kínrím (mozaikrím) - azonos hangzás, különböző szóhatárok
+    if (this.isTortureRhyme(ending1, ending2)) return RhymeType.TortureRhyme;
+    
+    // Kancsal rím - mássalhangzók egyeznek, magánhangzók különböznek  
+    if (consonants1.join('') === consonants2.join('') && vowels1.join('') !== vowels2.join('')) {
+      return RhymeType.CrookedRhyme;
+    }
+    
+    // Asszonánc - magánhangzók egyeznek
+    if (vowels1.join('') === vowels2.join('')) {
+      // Mássalhangzós asszonánc - mássalhangzók is egyeznek
+      if (consonants1.join('') === consonants2.join('')) {
+        return RhymeType.ConsonantRhyme;
+      }
+      // Tiszta asszonánc - csak magánhangzók egyeznek
+      return RhymeType.Assonance;
+    }
+    
+    // Hím/nő rím ellenőrzés
+    const rhythm1 = this.getRhymeRhythm(ending1);
+    const rhythm2 = this.getRhymeRhythm(ending2);
+    
+    // Legalább az utolsó szótag egyezzen
+    const lastSyllable1 = this.getLastSyllable(ending1);
+    const lastSyllable2 = this.getLastSyllable(ending2);
+    
+    if (this.syllablesRhyme(lastSyllable1, lastSyllable2)) {
+      if (rhythm1 === 'U-' && rhythm2 === 'U-') return RhymeType.MasculineRhyme;
+      if (rhythm1 === '-U' && rhythm2 === '-U') return RhymeType.FeminineRhyme;
+      return RhymeType.Assonance; // Gyenge asszonánc
+    }
+    
+    return RhymeType.NoRhyme;
   }
 
+  /**
+   * Magánhangzók kinyernése szóból
+   */
+  private extractVowels(word: string): string[] {
+    return Array.from(word.toLowerCase()).filter(char => this.vowelList.includes(char));
+  }
+  
+  /**
+   * Mássalhangzók kinyernése szóból  
+   */
+  private extractConsonants(word: string): string[] {
+    return Array.from(word.toLowerCase()).filter(char => 
+      /[a-záéíóőúűäöü]/i.test(char) && !this.vowelList.includes(char)
+    );
+  }
+  
+  /**
+   * Kecskerím ellenőrzés - mássalhangzók felcserélve
+   */
+  private isGoatRhyme(word1: string, word2: string): boolean {
+    // Példák: "kupán" - "kapun", "haján" - "kalász"  
+    const chars1 = Array.from(word1.toLowerCase());
+    const chars2 = Array.from(word2.toLowerCase());
+    
+    if (chars1.length !== chars2.length) return false;
+    
+    let differences = 0;
+    const swappedPairs: number[] = [];
+    
+    for (let i = 0; i < chars1.length; i++) {
+      if (chars1[i] !== chars2[i]) {
+        differences++;
+        swappedPairs.push(i);
+      }
+    }
+    
+    // Pontosan 2 vagy 4 különböző karakternek kell lennie (páros felcserélés)
+    if (differences === 2) {
+      const [pos1, pos2] = swappedPairs;
+      return chars1[pos1] === chars2[pos2] && chars1[pos2] === chars2[pos1];
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Kínrím ellenőrzés - azonos hangzás, különböző szóhatárok
+   */
+  private isTortureRhyme(ending1: string, ending2: string): boolean {
+    // Példák: "fülemüle" - "fülem, ül-e", "érte sültem" - "értesültem"
+    const clean1 = ending1.replace(/\s+/g, '');
+    const clean2 = ending2.replace(/\s+/g, '');
+    
+    return clean1 === clean2 && ending1.includes(' ') !== ending2.includes(' ');
+  }
+  
+  /**
+   * Rím ritmusának meghatározása (hím/nőrím)
+   */
+  private getRhymeRhythm(word: string): string {
+    const syllables = this.splitToSyllables(word);
+    if (syllables.length === 0) return '';
+    
+    const lastSyllable = syllables[syllables.length - 1];
+    const vowels = this.extractVowels(lastSyllable);
+    
+    if (vowels.length === 0) return '';
+    
+    const isLongVowel = ['á','é','í','ó','ő','ú','ű'].includes(vowels[vowels.length - 1]);
+    const endsWithConsonant = !/[aáeéiíoóöőuúüű]$/i.test(lastSyllable);
+    
+    if (isLongVowel || endsWithConsonant) {
+      return syllables.length > 1 ? 'U-' : '-'; // Jambikus (hímrím)
+    } else {
+      return syllables.length > 1 ? '-U' : 'U'; // Trochaikus (nőrím)
+    }
+  }
+  
+  /**
+   * Egyszerű szótagolás rímfelismeréshez
+   */
+  private splitToSyllables(word: string): string[] {
+    // Egyszerűsített szótagolás - magánhangzók alapján
+    const syllables: string[] = [];
+    let currentSyllable = '';
+    
+    for (const char of word.toLowerCase()) {
+      currentSyllable += char;
+      if (this.vowelList.includes(char)) {
+        syllables.push(currentSyllable);
+        currentSyllable = '';
+      }
+    }
+    
+    if (currentSyllable) {
+      // Utolsó szótaghoz adjuk a maradék mássalhangzókat
+      if (syllables.length > 0) {
+        syllables[syllables.length - 1] += currentSyllable;
+      } else {
+        syllables.push(currentSyllable);
+      }
+    }
+    
+    return syllables;
+  }
+  
+  /**
+   * Utolsó szótag kinyernése
+   */
+  private getLastSyllable(word: string): string {
+    const syllables = this.splitToSyllables(word);
+    return syllables.length > 0 ? syllables[syllables.length - 1] : word;
+  }
+  
+  /**
+   * Két szótag rímelésének ellenőrzése
+   */
+  private syllablesRhyme(syllable1: string, syllable2: string): boolean {
+    const vowels1 = this.extractVowels(syllable1);
+    const vowels2 = this.extractVowels(syllable2);
+    
+    // Legalább az utolsó magánhangzó egyezzen
+    if (vowels1.length === 0 || vowels2.length === 0) return false;
+    
+    const lastVowel1 = vowels1[vowels1.length - 1];
+    const lastVowel2 = vowels2[vowels2.length - 1];
+    
+    return this.vowelsRhyme(lastVowel1, lastVowel2);
+  }
+  
+  /**
+   * Magánhangzók rímelése (hasonló hangzású magánhangzók)
+   */
+  private vowelsRhyme(vowel1: string, vowel2: string): boolean {
+    if (vowel1 === vowel2) return true;
+    
+    const rhymeGroups = [
+      ['a', 'á'], ['e', 'é'], ['i', 'í'], ['o', 'ó'], 
+      ['ö', 'ő'], ['u', 'ú'], ['ü', 'ű']
+    ];
+    
+    return rhymeGroups.some(group => 
+      group.includes(vowel1) && group.includes(vowel2)
+    );
+  }
+  
   private areConsonantsSimilar(cons1: string, cons2: string): boolean {
     const similarGroups = [
       ['b', 'p'], ['d', 't'], ['g', 'k'],
@@ -181,6 +399,36 @@ export class RhymeAnalyzerService {
     return similarGroups.some(group =>
       (group.includes(cons1) && group.includes(cons2))
     );
+  }
+
+  /**
+   * Két karaktertömb hasonlóságának számítása
+   */
+  private calculateArraySimilarity(arr1: string[], arr2: string[]): number {
+    if (arr1.length === 0 && arr2.length === 0) return 1;
+    if (arr1.length === 0 || arr2.length === 0) return 0;
+
+    const maxLength = Math.max(arr1.length, arr2.length);
+    let matches = 0;
+
+    for (let i = 0; i < maxLength; i++) {
+      const char1 = arr1[i] || '';
+      const char2 = arr2[i] || '';
+      
+      if (char1 === char2) {
+        matches++;
+      } else if (this.vowelList.includes(char1) && this.vowelList.includes(char2)) {
+        if (this.vowelsRhyme(char1, char2)) {
+          matches += 0.5;
+        }
+      } else if (!this.vowelList.includes(char1) && !this.vowelList.includes(char2)) {
+        if (this.areConsonantsSimilar(char1, char2)) {
+          matches += 0.5;
+        }
+      }
+    }
+
+    return matches / maxLength;
   }
 
   private identifyRhymeType(rhymePattern: string[]): string {
