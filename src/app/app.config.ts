@@ -50,7 +50,7 @@ export const appConfig: ApplicationConfig = {
       }
     ),
     
-    // NgRx Effects - ensure proper initialization
+    // NgRx Effects
     provideEffects([AnalysisEffects]),
     
     // NgRx Router Store

@@ -115,8 +115,10 @@ export class AnalysisEffects {
   }, { dispatch: false });
 
   // Cache analysis results
-  cacheResults$ = createEffect(() =>
-    this.actions$.pipe(
+  cacheResults$ = createEffect(() => {
+    if (!this.actions$) return of();
+    
+    return this.actions$.pipe(
       ofType(AnalysisActions.analysisSuccess),
       withLatestFrom(this.store.select(selectAnalysisState)),
       map(([action, analysisState]) => {
@@ -128,12 +130,14 @@ export class AnalysisEffects {
           ttl 
         });
       })
-    )
-  );
+    );
+  });
 
   // Batch analysis effect
-  performBatchAnalysis$ = createEffect(() =>
-    this.actions$.pipe(
+  performBatchAnalysis$ = createEffect(() => {
+    if (!this.actions$) return of();
+    
+    return this.actions$.pipe(
       ofType(AnalysisActions.startBatchAnalysis),
       switchMap(({ texts, options }) => {
         const total = texts.length;
@@ -165,21 +169,22 @@ export class AnalysisEffects {
           )
         );
       })
-    )
-  );
+    );
+  });
 
   // Export analysis effect
-  exportAnalysis$ = createEffect(() =>
-    this.actions$.pipe(
+  exportAnalysis$ = createEffect(() => {
+    if (!this.actions$) return of();
+    
+    return this.actions$.pipe(
       ofType(AnalysisActions.exportAnalysis),
       withLatestFrom(this.store.select(selectAnalysisState)),
       tap(([{ format }, analysisState]) => {
         this.exportToFormat(analysisState, format);
         this.notificationService.showSuccess(`Analysis exported as ${format.toUpperCase()}`);
       })
-    ),
-    { dispatch: false }
-  );
+    );
+  }, { dispatch: false });
 
   // Clean expired cache periodically
   cleanExpiredCache$ = createEffect(() =>
@@ -189,8 +194,10 @@ export class AnalysisEffects {
   );
 
   // Real-time analysis for text changes
-  realTimeAnalysis$ = createEffect(() =>
-    this.actions$.pipe(
+  realTimeAnalysis$ = createEffect(() => {
+    if (!this.actions$) return of();
+    
+    return this.actions$.pipe(
       ofType(AnalysisActions.updateText),
       debounceTime(1000), // Wait for 1 second of no typing
       distinctUntilChanged(),
@@ -203,8 +210,8 @@ export class AnalysisEffects {
           })))
         )
       )
-    )
-  );
+    );
+  });
 
   private generateCacheKey(text: string): string {
     // Simple hash function for cache key generation
