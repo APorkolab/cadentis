@@ -8,175 +8,62 @@ import { VerseForm } from '../models/verse-form.model';
 export class VerseFormService {
   private verseForms = [
     {
-      "Verslábak": [
-        { "formName": "ta láb", "pattern": "-" },
-        { "formName": "ti láb", "pattern": "U" },
-        { "formName": "jambus láb", "pattern": "U-" },
-        { "formName": "trocheus láb", "pattern": "-U" },
-        { "formName": "daktilus láb", "pattern": "-UU" },
-        { "formName": "anapesztus láb", "pattern": "UU-" },
-        { "formName": "spondeusz láb", "pattern": "--" },
-        { "formName": "pirrichius láb", "pattern": "UU" },
-        { "formName": "molosszus láb", "pattern": "---" },
-        { "formName": "tribrachisz láb", "pattern": "UUU" },
-        { "formName": "proceleuzmatikus láb", "pattern": "UUUU" }
+      // Complete Hungarian metrical feet based on mora count
+      "TwoMoraic": [
+        { "formName": "pirrichius", "pattern": "UU", "moras": 2, "nickname": "pici", "example": "csoki" }
       ],
-      "Kolónok": [
-        { "formName": "bacchius kolón", "pattern": "U--", "syllables": 3 },
-        { "formName": "palimbacchius kolón", "pattern": "--U", "syllables": 3 },
-        { "formName": "kretikus kolón", "pattern": "-U-", "syllables": 3 },
-        { "formName": "amphibrachisz kolón", "pattern": "U-U", "syllables": 3 },
-        { "formName": "1. paion kolón", "pattern": "-UUU", "syllables": 4 },
-        { "formName": "2. paion kolón", "pattern": "U-UU", "syllables": 4 },
-        { "formName": "3. paion kolón", "pattern": "UU-U", "syllables": 4 },
-        { "formName": "4. paion kolón", "pattern": "UUU-", "syllables": 4 },
-        { "formName": "1. epitritus kolón", "pattern": "U---", "syllables": 4 },
-        { "formName": "2. epitritus kolón", "pattern": "-U--", "syllables": 4 },
-        { "formName": "3. epitritus kolón", "pattern": "--U-", "syllables": 4 },
-        { "formName": "4. epitritus kolón", "pattern": "---U", "syllables": 4 },
-        { "formName": "ionicus a minore kolón", "pattern": "UU--", "syllables": 4 },
-        { "formName": "ionicus a maiore kolón", "pattern": "--UU", "syllables": 4 },
-        { "formName": "choriambus kolón", "pattern": "-UU-", "syllables": 4 },
-        { "formName": "antiszpasztus kolón", "pattern": "U--U", "syllables": 4 }
+      "ThreeMoraic": [
+        { "formName": "tribrakhisz", "pattern": "UUU", "moras": 3, "nickname": "szapora", "example": "szerepe" },
+        { "formName": "jambus", "pattern": "U-", "moras": 3, "nickname": "szökő", "example": "vadász" },
+        { "formName": "trocheus", "pattern": "-U", "moras": 3, "nickname": "perge, lejti", "example": "Béni" }
       ],
-      "Sorfajták": [
-        { "formName": "hexameter", "pattern": "-=|-=|-=|-=|-UU|-?", "syllables": 6 },
-        { "formName": "pentameter", "pattern": "-=|-=|-||-UU|-UU|?", "syllables": 6 },
-        { "formName": "phalaikoszi", "pattern": "UU-UU-U-U--", "syllables": 11 },
-        { "formName": "hendecasyllabus/B", "pattern": "U--UU-U-U-?", "syllables": 11 },
-        { "formName": "4mtr trochaicus", "pattern": "-U-U-U-U-U-U-U-", "syllables": 8 },
-        { "formName": "francia alexandrin A", "pattern": "-U--U-||-UU-U-?", "syllables": 12 },
-        { "formName": "trimeter iambicus", "pattern": "U-U-U-U-U-U?", "syllables": 6 }
+      "FourMoraic": [
+        { "formName": "anapesztus", "pattern": "UU-", "moras": 4, "nickname": "lebegő, doboró", "example": "csodaszép" },
+        { "formName": "daktilus", "pattern": "-UU", "moras": 4, "nickname": "lengedi, görgedi", "example": "éjszaka" },
+        { "formName": "spondeus", "pattern": "--", "moras": 4, "nickname": "lassú, lépő", "example": "forró" },
+        { "formName": "proceleuzmatikus", "pattern": "UUUU", "moras": 4, "nickname": "futamodi", "example": "csiribiri" },
+        { "formName": "amphibrakhisz", "pattern": "U-U", "moras": 4, "nickname": "körösdi", "example": "ki látta?" }
       ],
-      "ComplexForms": [
-        { "formName": "bi_adoniszi.fictive", "components": ["adoniszi kolon", "adoniszi kolon"] },
-        { "formName": "nibelungizált alexandrin", "components": ["nib.alex.1.fictive", "||--|--|U-|?"] },
-        { "formName": "szapphoi", "components": ["szapphói sor", "szapphói sor", "szapphói sor", "adoniszi kolon"] }
+      "FiveMoraic": [
+        { "formName": "bacchius", "pattern": "U--", "moras": 5, "nickname": "toborzó", "example": "valóság" },
+        { "formName": "palimbacchius", "pattern": "--U", "moras": 5, "nickname": "tomboldi", "example": "őrjöngve" },
+        { "formName": "krétikus", "pattern": "-U-", "moras": 5, "nickname": "ugrató", "example": "óh, az éj!" },
+        { "formName": "pentabrakhisz", "pattern": "UUUUU", "moras": 5, "nickname": "eliramodi", "example": "csodaparipa" },
+        { "formName": "paión 1", "pattern": "-UUU", "moras": 5, "nickname": "pergepici", "example": "hársfatea" },
+        { "formName": "paión 2", "pattern": "UUU-", "moras": 5, "nickname": "piciszökő", "example": "borogatás" }
       ],
-      "StrophesAndLines": [
+      "SixMoraic": [
+        { "formName": "kis jónikus", "pattern": "UU--", "moras": 6, "nickname": "picilépő", "example": "szerelemnek" },
+        { "formName": "nagy jónikus", "pattern": "--UU", "moras": 6, "nickname": "lépőpici", "example": "álombeli" },
+        { "formName": "antiszpasztus", "pattern": "U--U", "moras": 6, "nickname": "toborzéki", "example": "barangolni" },
+        { "formName": "koriambus", "pattern": "-UU-", "moras": 6, "nickname": "lengedő", "example": "alszik a vár" },
+        { "formName": "molosszus", "pattern": "---", "moras": 6, "nickname": "andalgó", "example": "száncsengő" }
+      ],
+      "ClassicalMeters": [
         {
-          "formName": "asklepiadesi_A123_A123",
-          "pattern": "asklepiadesi_A123/asklepiadesi_A123"
+          "formName": "hexameter",
+          "pattern": "-=|-=|-=|-=|-UU|-x",
+          "description": "Hat versláb: daktilus vagy spondeus, az utóelőtti mindig daktilus",
+          "substitutions": "Az '=' helyen daktilus (-UU) vagy spondeus (--) állhat"
         },
         {
-          "formName": "asklepiadesi_D13_A123",
-          "pattern": "asklepiadesi_D13/asklepiadesi_A123"
-        },
-        {
-          "formName": "asklepiadesi_E1234_E1234",
-          "pattern": "asklepiadesi_E1234/asklepiadesi_E1234"
-        },
-        {
-          "formName": "asklepiadesi_A",
-          "pattern": "asklepiadesi_A123_A123/asklepiadesi_A123_A123"
-        },
-        {
-          "formName": "asklepiadesi_B",
-          "pattern": "asklepiadesi_A123_A123/asklepiadesi_A123/asklepiadesi_B4"
-        },
-        {
-          "formName": "asklepiadesi_C",
-          "pattern": "asklepiadesi_A123_A123/asklepiadesi_C3/asklepiadesi_B4"
-        },
-        {
-          "formName": "asklepiadesi_D",
-          "pattern": "asklepiadesi_D13_A123/asklepiadesi_D13_A123"
-        },
-        {
-          "formName": "asklepiadesi_E",
-          "pattern": "asklepiadesi_E1234_E1234/asklepiadesi_E1234_E1234"
-        },
-        {
-          "formName": "alkaiosi",
-          "pattern": "alkaiosi_12/alkaiosi_12/alkaiosi_3/alkaiosi_4"
-        },
-        {
-          "formName": "Szeptember végén rimkeplet=ababcdcd",
-          "pattern": "Szept_vegen_1212_1212"
+          "formName": "pentameter",
+          "pattern": "-=|-=|-||-UU|-UU|-",
+          "description": "Hat fél versláb (3. és 6. csonka)",
+          "caesura": "A harmadik láb után mindig szedés"
         },
         {
           "formName": "disztichon",
-          "pattern": "hexameter/pentameter"
-        },
-        {
-          "formName": "2_ionicus_a_min",
-          "pattern": "ionicus_a_minore_kolon/ionicus_a_minore_kolon"
-        },
-        {
-          "formName": "anakreoni 16",
-          "pattern": "2_ionicus_a_min/2_ionicus_a_min"
-        },
-        {
-          "formName": "sapphoi",
-          "pattern": "szapphoi_sor/szapphoi_sor/szapphoi_sor/adoniszi_kolon"
-        },
-        {
-          "formName": "pnl_1",
-          "pattern": "molosszus_lab/proceleuzmatikus_lab"
-        },
-        {
-          "formName": "pnl_2",
-          "pattern": "pnl_1/pnl_1"
-        },
-        {
-          "formName": "pnl_3",
-          "pattern": "pnl_2/pnl_2"
-        },
-        {
-          "formName": "pnl_4",
-          "pattern": "molosszus_lab/pirrichius_lab"
-        },
-        {
-          "formName": "pnl_5",
-          "pattern": "pirrichius_lab/pnl_3"
-        },
-        {
-          "formName": "pnl_6",
-          "pattern": "pnl_5/pnl_4"
-        },
-        {
-          "formName": "hal éji éneke",
-          "pattern": "ta_lab/pnl_6/ta_lab"
+          "pattern": "hexameter/pentameter",
+          "description": "Egy hexameter + egy pentameter pár",
+          "rhyme": false
         }
       ]
     }
   ];
 
   constructor() {
-    this.initializeComplexPatterns();
-  }
-
-  private initializeComplexPatterns() {
-    const allPatterns = this.collectAllPatterns();
-    this.verseForms.forEach(formType => {
-      formType.ComplexForms.forEach((complexForm: { components: string[]; pattern?: string }) => {
-        complexForm.pattern = this.assemblePattern(complexForm.components, allPatterns);
-      });
-    });
-  }
-
-  private collectAllPatterns(): Map<string, string> {
-    const allPatterns = new Map<string, string>();
-
-    this.verseForms.forEach(formType => {
-      ["Verslábak", "Kolónok", "Sorfajták", "StrophesAndLines"].forEach((category) => {
-        const items = formType[category as keyof typeof formType] || [];
-        items.forEach((item: any) => {
-          if (item.formName && item.pattern) {
-            allPatterns.set(item.formName, item.pattern);
-          }
-        });
-      });
-    });
-
-    return allPatterns;
-  }
-
-  private assemblePattern(components: string[], allPatterns: Map<string, string>): string {
-    return components
-      .map(component => allPatterns.get(component) || "")
-      .join('')
-      .replace(/=/g, '(UU|-)'); // Az '=' jel kezelése hosszú vagy két rövid szótagként
+    // No complex pattern initialization needed with new structure
   }
 
   private matchPattern(inputPattern: string, versePattern: string): boolean {
@@ -195,13 +82,15 @@ export class VerseFormService {
 
   getVerseForms(): Observable<VerseForm[]> {
     return of(this.verseForms.flatMap(formType => {
-      return Object.entries(formType).flatMap(([category, forms]) =>
-        (forms as VerseForm[]).map(form => ({
-          ...form,
-          moraCount: form.pattern ? this.calculateMoraCount(form.pattern) : 0,
+      return Object.entries(formType).flatMap(([category, forms]) => {
+        if (!Array.isArray(forms)) return [];
+        return forms.map(form => ({
+          formName: form.formName,
+          pattern: form.pattern,
+          moraCount: (form as any).moras || this.calculateMoraCount(form.pattern || ''),
           category
-        }))
-      );
+        }));
+      });
     }));
   }
 

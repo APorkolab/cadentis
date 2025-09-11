@@ -24,6 +24,8 @@ class TextAnalysisWorker {
   private readonly MULTI_LETTER_CONSONANTS = ['sz', 'cs', 'ty', 'gy', 'ny', 'zs', 'dz', 'dzs', 'ly'];
   private readonly DIPHTHONGS = ['ai', 'au', 'ei', 'eu', 'oi', 'ou', 'ui'];
   private readonly SPECIAL_CONSONANT_PAIRS = ['kh', 'ph', 'th'];
+  private readonly STOPS = new Set(['p','t','k','b','d','g']);
+  private readonly LIQUIDS = new Set(['r','l']);
 
   constructor() {
     addEventListener('message', this.handleMessage.bind(this));
@@ -221,21 +223,22 @@ class TextAnalysisWorker {
               syllables.push(currentSyllable);
               currentSyllable = '';
             } else {
-              // Multiple consonants: split after the first consonant unit
-              const nextTwo = word.slice(i + 1, i + 3).toLowerCase();
-              const nextThree = word.slice(i + 1, i + 4).toLowerCase();
-              if (this.MULTI_LETTER_CONSONANTS.includes(nextThree)) {
-                currentSyllable += word.slice(i + 1, i + 4);
-                i += 3;
-              } else if (this.MULTI_LETTER_CONSONANTS.includes(nextTwo)) {
-                currentSyllable += word.slice(i + 1, i + 3);
-                i += 2;
-              } else {
-                currentSyllable += word[i + 1];
-                i += 1;
+              // Multiple consonants: split after the first one (keep double consonants together)
+              let consonantsToTake = 1;
+              
+              // Check for double consonants (same letter repeated)
+              if (word[i + 1] === word[i + 2]) {
+                consonantsToTake = 2; // Keep double consonants together
               }
+              // Special case: ng cluster - keep together when possible
+              else if (word.slice(i + 1, i + 3) === 'ng' && consonantCount >= 2) {
+                consonantsToTake = 2; // Keep ng together
+              }
+              
+              currentSyllable += word.slice(i + 1, i + 1 + consonantsToTake);
               syllables.push(currentSyllable);
               currentSyllable = '';
+              i += consonantsToTake;
             }
           }
         }
@@ -382,6 +385,9 @@ class TextAnalysisWorker {
   }
 
   private isLongSyllable(syllable: string, vowels: string[]): boolean {
+    // Special rule: the article 'a' may be long in Hungarian metrics
+    if (syllable === 'a') return true;
+
     const hasLongVowel = this.isLongVowel(vowels[0]);
     const hasConsonantCluster = this.isLengthenedByCluster(syllable);
     const hasDiphthong = this.containsDiphthong(syllable);
@@ -398,17 +404,39 @@ class TextAnalysisWorker {
     let i = 0;
 
     while (i < afterVowel.length) {
-      const twoCharUnit = afterVowel.slice(i, i + 2);
+      const three = afterVowel.slice(i, i + 3).toLowerCase();
+      const two = afterVowel.slice(i, i + 2).toLowerCase();
 
-      if (this.SPECIAL_CONSONANT_PAIRS.includes(twoCharUnit)) {
+      // kh/th/ph are treated as a single short consonant (do not lengthen by themselves)
+      if (this.SPECIAL_CONSONANT_PAIRS.includes(two)) {
         i += 2;
         continue;
       }
 
-      if (this.MULTI_LETTER_CONSONANTS.includes(twoCharUnit)) {
+      // dzs, dz, cs, gy, ly, ny, sz, ty, zs count as single consonant units
+      if (this.MULTI_LETTER_CONSONANTS.includes(three)) {
+        consonantCount++;
+        i += 3;
+        continue;
+      }
+      if (this.MULTI_LETTER_CONSONANTS.includes(two)) {
         consonantCount++;
         i += 2;
-      } else if (this.isConsonant(afterVowel[i])) {
+        continue;
+      }
+
+      // stop+liquid (pl, pr, tr, dr, kr, gr, bl, gl, kl, br) can be short as a unit
+      if (i + 1 < afterVowel.length) {
+        const c1 = afterVowel[i].toLowerCase();
+        const c2 = afterVowel[i + 1].toLowerCase();
+        if (this.STOPS.has(c1) && this.LIQUIDS.has(c2)) {
+          consonantCount += 1; // treat as one
+          i += 2;
+          continue;
+        }
+      }
+
+      if (this.isConsonant(afterVowel[i])) {
         consonantCount++;
         i++;
       } else {
