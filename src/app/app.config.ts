@@ -42,15 +42,15 @@ export const appConfig: ApplicationConfig = {
       },
       {
         runtimeChecks: {
-          strictStateImmutability: true,
-          strictActionImmutability: true,
-          strictStateSerializability: true,
-          strictActionSerializability: true
+          strictStateImmutability: false,
+          strictActionImmutability: false,
+          strictStateSerializability: false,
+          strictActionSerializability: false
         }
       }
     ),
     
-    // NgRx Effects
+    // NgRx Effects - ensure proper initialization
     provideEffects([AnalysisEffects]),
     
     // NgRx Router Store

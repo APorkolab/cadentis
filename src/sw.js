@@ -1,18 +1,19 @@
 // Service Worker for Cadentis PWA
-const CACHE_NAME = 'cadentis-v1.0.0';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'cadentis-v1.0.1';
+
+// Determine base path for GitHub Pages
+const isGitHubPages = location.hostname === 'aporkolab.github.io';
+const BASE_PATH = isGitHubPages ? '/cadentis' : '';
+const OFFLINE_URL = `${BASE_PATH}/offline.html`;
 
 // Resources to cache on install
 const CACHE_RESOURCES = [
-  '/',
-  '/home',
-  '/security',
-  '/testing',
-  '/manifest.json',
-  OFFLINE_URL,
-  // Add your static assets here
-  // '/assets/icons/icon-192x192.png',
-  // '/assets/icons/icon-512x512.png'
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/home`,
+  `${BASE_PATH}/security`, 
+  `${BASE_PATH}/testing`,
+  `${BASE_PATH}/manifest.json`,
+  OFFLINE_URL
 ];
 
 // Install event - cache resources

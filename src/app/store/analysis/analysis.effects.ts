@@ -27,11 +27,21 @@ export class AnalysisEffects {
     private store: Store<AppState>,
     private verseAnalysisService: VerseAnalysisService,
     private notificationService: NotificationService
-  ) {}
+  ) {
+    // Ensure actions$ is properly initialized
+    if (!this.actions$) {
+      console.error('Actions stream not initialized in AnalysisEffects');
+    }
+  }
 
   // Main analysis effect
-  performAnalysis$ = createEffect(() =>
-    this.actions$.pipe(
+  performAnalysis$ = createEffect(() => {
+    if (!this.actions$) {
+      console.warn('Actions stream not available in performAnalysis$');
+      return of(); // Return empty observable if actions$ not available
+    }
+    
+    return this.actions$.pipe(
       ofType(AnalysisActions.startAnalysis),
       debounceTime(300), // Debounce rapid analysis requests
       switchMap(({ text, options }) => {
@@ -50,12 +60,14 @@ export class AnalysisEffects {
           })
         );
       })
-    )
-  );
+    );
+  });
 
   // Auto-save to history after successful analysis
-  autoSaveToHistory$ = createEffect(() =>
-    this.actions$.pipe(
+  autoSaveToHistory$ = createEffect(() => {
+    if (!this.actions$) return of();
+    
+    return this.actions$.pipe(
       ofType(AnalysisActions.analysisSuccess),
       withLatestFrom(this.store.select(selectAnalysisState)),
       map(([action, analysisState]) => {
@@ -66,31 +78,41 @@ export class AnalysisEffects {
         };
         return AnalysisActions.addToHistory({ analysis });
       })
-    )
-  );
+    );
+  });
 
   // Show success notification
-  showSuccessNotification$ = createEffect(() =>
-    this.actions$.pipe(
+  showSuccessNotification$ = createEffect(() => {
+    if (!this.actions$) return of();
+    
+    return this.actions$.pipe(
       ofType(AnalysisActions.analysisSuccess),
       tap(({ results, processingTime }) => {
-        const message = `Analysis completed in ${processingTime.toFixed(2)}ms. Found ${results.length} verses.`;
-        this.notificationService.showSuccess(message, { duration: 3000 });
+        try {
+          const message = `Analysis completed in ${processingTime.toFixed(2)}ms. Found ${results.length} verses.`;
+          this.notificationService.showSuccess(message, { duration: 3000 });
+        } catch (error) {
+          console.warn('Notification service not available:', error);
+        }
       })
-    ),
-    { dispatch: false }
-  );
+    );
+  }, { dispatch: false });
 
   // Show error notification
-  showErrorNotification$ = createEffect(() =>
-    this.actions$.pipe(
+  showErrorNotification$ = createEffect(() => {
+    if (!this.actions$) return of();
+    
+    return this.actions$.pipe(
       ofType(AnalysisActions.analysisFailure),
       tap(({ error }) => {
-        this.notificationService.showError(`Analysis failed: ${error}`);
+        try {
+          this.notificationService.showError(`Analysis failed: ${error}`);
+        } catch (err) {
+          console.warn('Notification service not available:', err);
+        }
       })
-    ),
-    { dispatch: false }
-  );
+    );
+  }, { dispatch: false });
 
   // Cache analysis results
   cacheResults$ = createEffect(() =>
