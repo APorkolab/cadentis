@@ -12,8 +12,11 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTableModule } from '@angular/material/table';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { TextParserService } from '../../services/text-parser.service';
+import { MLProsodyService } from '../../services/ml-prosody.service';
+import { PWAService } from '../../services/pwa.service';
+import { ProsodyVisualizerComponent, ProsodyData } from '../prosody-visualizer/prosody-visualizer.component';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, tap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, tap, switchMap, combineLatest } from 'rxjs/operators';
 import { fadeInAnimation } from '../../animations';
 
 @Component({
@@ -32,7 +35,8 @@ import { fadeInAnimation } from '../../animations';
     MatIconModule,
     MatExpansionModule,
     MatTableModule,
-    TextFieldModule
+    TextFieldModule,
+    ProsodyVisualizerComponent
   ],
   template: `
     <div class="analyzer-container" @fadeIn>
@@ -182,6 +186,10 @@ Eddigi kítárt hadak közt külön vitez vala"></textarea>
             <mat-card-title>
               <mat-icon>science</mat-icon>
               Versmértani elemzés
+              <div class="ml-indicator" *ngIf="mlAnalysis">
+                <mat-chip color="accent">ML Enhanced</mat-chip>
+                <span class="confidence">{{ (mlAnalysis.overallConfidence * 100).toFixed(1) }}% biztos</span>
+              </div>
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
@@ -206,6 +214,12 @@ Eddigi kítárt hadak közt külön vitez vala"></textarea>
             </div>
           </mat-card-content>
         </mat-card>
+
+        <!-- Advanced Visualizations -->
+        <app-prosody-visualizer 
+          *ngIf="visualizationData"
+          [data]="visualizationData">
+        </app-prosody-visualizer>
       </div>
 
       <!-- Üres állapot -->
@@ -474,11 +488,18 @@ Eddigi kítárt hadak közt külön vitez vala"></textarea>
 export class QuantitativeAnalyzerComponent implements OnInit, OnDestroy {
   inputText = '';
   analysis: any = null;
+  mlAnalysis: any = null;
+  visualizationData: ProsodyData | null = null;
+  isMLEnabled = true;
   
   private analysisSubject = new Subject<string>();
   private analysisSubscription!: Subscription;
 
-  constructor(private textParser: TextParserService) {}
+  constructor(
+    private textParser: TextParserService,
+    private mlProsody: MLProsodyService,
+    private pwaService: PWAService
+  ) {}
 
   ngOnInit(): void {
     this.analysisSubscription = this.analysisSubject.pipe(
@@ -512,14 +533,44 @@ export class QuantitativeAnalyzerComponent implements OnInit, OnDestroy {
   private performAnalysis(text: string): void {
     if (!text || text.trim() === '') {
       this.analysis = null;
+      this.mlAnalysis = null;
+      this.visualizationData = null;
       return;
     }
 
     try {
+      // Traditional rule-based analysis
       this.analysis = this.textParser.analyzeVerse(text);
+      
+      // ML-enhanced analysis
+      if (this.isMLEnabled) {
+        this.mlProsody.analyzeSyllablesML(text).subscribe({
+          next: (mlResult) => {
+            this.mlAnalysis = mlResult;
+            this.updateVisualizationData();
+            
+            // Cache analysis offline
+            const analysisId = this.generateAnalysisId(text);
+            this.pwaService.cacheVerseAnalysis(analysisId, {
+              traditional: this.analysis,
+              ml: mlResult,
+              timestamp: Date.now()
+            });
+          },
+          error: (error) => {
+            console.warn('ML analysis failed, using traditional only:', error);
+            this.mlAnalysis = null;
+            this.updateVisualizationData();
+          }
+        });
+      } else {
+        this.updateVisualizationData();
+      }
     } catch (error) {
       console.error('Analysis error:', error);
       this.analysis = null;
+      this.mlAnalysis = null;
+      this.visualizationData = null;
     }
   }
 
@@ -590,5 +641,87 @@ export class QuantitativeAnalyzerComponent implements OnInit, OnDestroy {
     }
     
     return `${Math.round(avgSyllables)} szótagos vers`;
+  }
+
+  private updateVisualizationData(): void {
+    if (!this.analysis) return;
+    
+    const syllables = this.mlAnalysis ? 
+      this.mlAnalysis.syllables.map((syl: any, i: number) => ({
+        text: syl.text,
+        isLong: syl.isLong,
+        confidence: syl.confidence,
+        position: i,
+        stress: syl.stress || 0,
+        mora: syl.isLong ? 2 : 1
+      })) :
+      this.analysis.lines.flatMap((line: any, lineIndex: number) => 
+        line.syllables?.map((syl: any, syllIndex: number) => ({
+          text: syl.text || '',
+          isLong: syl.isLong || false,
+          confidence: 0.8, // Default confidence for rule-based
+          position: lineIndex * 100 + syllIndex, // Unique position
+          stress: syllIndex === 0 ? 1.0 : 0.3, // Hungarian first syllable stress
+          mora: (syl.isLong || false) ? 2 : 1
+        })) || []
+      );
+
+    this.visualizationData = {
+      syllables,
+      lines: this.analysis.lines.map((line: any) => ({
+        pattern: line.pattern || '',
+        syllables: line.syllables || [],
+        moraCount: line.moraCount || 0
+      }))
+    };
+  }
+
+  private generateAnalysisId(text: string): string {
+    // Simple hash function for analysis ID
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `analysis_${Math.abs(hash).toString(36)}`;
+  }
+
+  toggleMLAnalysis(): void {
+    this.isMLEnabled = !this.isMLEnabled;
+    if (this.inputText) {
+      this.performAnalysis(this.inputText);
+    }
+  }
+
+  shareAnalysis(): void {
+    if (!this.analysis) return;
+    
+    const shareContent = {
+      title: 'Cadentis - Magyar Verselemzés',
+      text: `Elemzett szöveg: "${this.inputText.substring(0, 50)}..."\n` +
+            `Szótagok: ${this.analysis.totalSyllables}, Morák: ${this.analysis.totalMoras}\n` +
+            `Domináns ritmus: ${this.analysis.dominantRhythm || 'Ismeretlen'}`,
+      url: window.location.href
+    };
+    
+    this.pwaService.shareContent(shareContent);
+  }
+
+  saveOffline(): void {
+    if (!this.analysis) return;
+    
+    const saveData = {
+      text: this.inputText,
+      analysis: this.analysis,
+      mlAnalysis: this.mlAnalysis,
+      timestamp: Date.now()
+    };
+    
+    this.pwaService.addToOfflineQueue('save-analysis', saveData);
+    this.pwaService.showNotification({
+      title: 'Elemzés mentve',
+      body: 'Az elemzés offline elérhetővé vált.'
+    });
   }
 }

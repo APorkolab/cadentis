@@ -16,6 +16,7 @@ import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { cacheInterceptor } from './core/interceptors/cache.interceptor';
 import { securityInterceptor } from './core/interceptors/security-functional.interceptor';
+import { provideServiceWorker } from '@angular/service-worker';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -64,6 +65,9 @@ export const appConfig: ApplicationConfig = {
       trace: false,
       traceLimit: 75,
       connectInZone: true
-    })
+    }), provideServiceWorker('ngsw-worker.js', {
+            enabled: !isDevMode(),
+            registrationStrategy: 'registerWhenStable:30000'
+          })
   ]
 };
