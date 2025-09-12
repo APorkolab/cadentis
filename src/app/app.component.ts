@@ -9,14 +9,11 @@ import { RouterOutlet, RouterModule } from '@angular/router';
   template: `
     <nav class="navbar">
       <div class="nav-container">
-        <a routerLink="/home" class="nav-brand">Cadentis</a>
+        <a routerLink="/analyzer" class="nav-brand">Cadentis</a>
         <div class="nav-links">
-          <a routerLink="/home" routerLinkActive="active">Home</a>
-          <a routerLink="/security" routerLinkActive="active">Security</a>
-          <a routerLink="/testing" routerLinkActive="active">Testing</a>
-          <a routerLink="/pwa" routerLinkActive="active">PWA</a>
-          <a routerLink="/analytics" routerLinkActive="active">Analytics</a>
-          <a routerLink="/documentation" routerLinkActive="active">Docs & DevOps</a>
+          <a routerLink="/analyzer" routerLinkActive="active">Elemző</a>
+          <a routerLink="/documentation" routerLinkActive="active">Dokumentáció</a>
+          <a routerLink="/about" routerLinkActive="active">Névjegy</a>
         </div>
       </div>
     </nav>
